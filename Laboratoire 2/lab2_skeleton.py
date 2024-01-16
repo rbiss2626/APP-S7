@@ -36,18 +36,19 @@ def test_grad(input_shape, forward, backward, X=None, output_grad=None):
 
 # ------------------------------ Layer functions ------------------------------
 def fully_connected_forward( W: np.ndarray, b : np.ndarray, X : np.ndarray):
-    #check array size for b
-    if b.shape[0] is not W.shape[0] and b.shape[1] is not X.shape[0]:
-        N = X.shape[0]
-        b = np.tile(b, N)
-    
-    Y = W @ X.T + b
+    N = X.shape[0]
+    b = np.tile(b, (N,1))
+ 
+    Y = W @ X.T + b.T
     return Y.T
 
 
 def fully_connected_backward(W, b, X, output_grad):
-    # <Your code here>
-    raise NotImplementedError()
+    gradX = W.T @ output_grad.T
+    gradW = output_grad.T @ X
+    gradB = output_grad[0,:] + output_grad[1,:]
+    
+    return gradX.T, gradW, gradB
 
 
 def relu_forward(X: np.ndarray):
@@ -71,34 +72,68 @@ def relu_forward(X: np.ndarray):
             if value >= 0:
                 Y[x] = value 
 
-
-            
     return Y
 
 
-def relu_backward(X, output_grad):
-    # <Your code here>
-    raise NotImplementedError()
+def relu_backward(X: np.ndarray, output_grad):
+    N = X.shape[0]
+
+    if X.ndim == 2:
+        I = X.shape[1]
+    else:
+        I = 0
+
+    dLdrelu = np.zeros(X.shape)
+
+    for x in range(0,N):
+        if I > 0:
+            for i in range(0,I): 
+                if X[x,i] >= 0:
+                    dLdrelu[x,i] = 1 
+        else:
+            if X[x]  >= 0:
+                dLdrelu[x] = 1 
+
+    return dLdrelu*output_grad
 
 
-def sigmoid_forward(X):
-    
-    raise NotImplementedError()
+def sigmoid_forward(X: np.ndarray):
+    N = X.shape[0]
 
+    if X.ndim == 2:
+        I = X.shape[1]
+    else:
+        I = 0
+
+    Y = np.zeros(X.shape)
+
+    for x in range(0,N):
+        if I > 0:
+            for i in range(0,I):
+                Y[x,i] = 1/(1+np.exp(-X[x,i]))
+        else:
+            Y[x] = 1/(1+np.exp(-X[x]))
+
+    return Y
 
 def sigmoid_backward(X, output_grad):
-    # <Your code here>
-    raise NotImplementedError()
+    Y = sigmoid_forward(X)
+    dLdsig = output_grad * Y * (1 - Y)
+    return dLdsig
 
 
 def bce_forward(x, target):
-    # <Your code here>
-    raise NotImplementedError()
+    L = -target*np.log(x) - (1 - target)*np.log(1 - x)
+    L = np.mean(L)
+    return L
 
 
 def bce_backward(x, target):
-    # <Your code here>
-    raise NotImplementedError()
+    dLdy = -target/x + (1-target)/(1-x)
+    dLdy = dLdy/len(x)
+
+    return dLdy
+    
 
 
 # ------------------------------ Test functions ------------------------------
@@ -107,9 +142,6 @@ def test_fully_connected_forward():
     W = np.array([[2, 3]])
     b = np.array([1])
     X = np.array([[-1.0, 0.5], [-2.0, 1.0]])
-    # W = np.array([[4,2,1], [-1,0,2], [-2,1,1], [3,-2,-2]])
-    # b = np.array([1, -2, 0, -3])
-    # X = np.array([1, -1, 2])
     Y = fully_connected_forward(W, b, X)
     
     assert_almost_equal(Y[0], 0.5)
@@ -213,13 +245,13 @@ def test_bce_backward():
 
 def test():
     test_fully_connected_forward()
-    # test_fully_connected_backward()
+    test_fully_connected_backward()
     test_relu_forward()
-    # test_relu_backward()
-    # test_sigmoid_forward()
-    # test_sigmoid_backward()
-    # test_bce_forward()
-    # test_bce_backward()
+    test_relu_backward()
+    test_sigmoid_forward()
+    test_sigmoid_backward()
+    test_bce_forward()
+    test_bce_backward()
 
 
 # ---------------------------- Training functions -----------------------------
