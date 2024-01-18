@@ -30,11 +30,11 @@ class FullyConnectedLayer(Layer):
         return (Y, x)
 
     def backward(self, output_grad, cache):
-        gradX = output_grad @ self.W
+        gradx = output_grad @ self.W
         gradW = output_grad.T @ cache
         gradB = np.sum(output_grad, axis=0) #output_grad[0,:] + output_grad[1,:]
 
-        return (gradX, {"w" : gradW, "b": gradB})
+        return (gradx, {"w" : gradW, "b": gradB})
 
 
 class BatchNormalization(Layer):
@@ -87,10 +87,28 @@ class Sigmoid(Layer):
         raise NotImplementedError()
 
     def forward(self, x):
-        raise NotImplementedError()
+        N = x.shape[0]
+
+        if x.ndim == 2:
+            I = x.shape[1]
+        else:
+            I = 0
+
+        Y = np.zeros(x.shape)
+
+        for j in range(0,N):
+            if I > 0:
+                for i in range(0,I):
+                    Y[j,i] = 1/(1+np.exp(-x[j,i]))
+            else:
+                Y[j] = 1/(1+np.exp(-x[j]))
+
+        return (Y, x)
 
     def backward(self, output_grad, cache):
-        raise NotImplementedError()
+        Y, _ = self.forward(cache)
+        dLdsig = output_grad * Y * (1 - Y)
+        return (dLdsig, None)
 
 
 class ReLU(Layer):
@@ -105,7 +123,45 @@ class ReLU(Layer):
         raise NotImplementedError()
 
     def forward(self, x):
-        raise NotImplementedError()
+        N = x.shape[0]
+
+        if x.ndim == 2:
+            I = x.shape[1]
+        else:
+            I = 0
+
+        Y = np.zeros(x.shape)
+
+        for j in range(0,N):
+            if I > 0:
+                for i in range(0,I):
+                    value = x[j,i] 
+                    if value >= 0:
+                        Y[j,i] = value 
+            else:
+                value = x[j] 
+                if value >= 0:
+                    Y[j] = value 
+
+        return (Y,x)
 
     def backward(self, output_grad, cache):
-        raise NotImplementedError()
+        N = cache.shape[0]
+
+        if cache.ndim == 2:
+            I = cache.shape[1]
+        else:
+            I = 0
+
+        dLdrelu = np.zeros(cache.shape)
+
+        for j in range(0,N):
+            if I > 0:
+                for i in range(0,I): 
+                    if cache[j,i] >= 0:
+                        dLdrelu[j,i] = 1 
+            else:
+                if cache[j]  >= 0:
+                    dLdrelu[j] = 1 
+
+        return (dLdrelu*output_grad, None)
