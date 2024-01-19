@@ -9,6 +9,8 @@ class FullyConnectedLayer(Layer):
     """
 
     def __init__(self, input_count, output_count):
+        Layer.__init__(self)
+
         self.W = np.random.normal(loc=0.0,
                              scale=np.sqrt(2 / (input_count + output_count)),
                              size=(output_count, input_count))
@@ -43,6 +45,8 @@ class BatchNormalization(Layer):
     """
 
     def __init__(self, input_count, alpha=0.1):
+        Layer.__init__(self)
+        
         self.M = input_count
         self.alpha = alpha
 
@@ -59,15 +63,19 @@ class BatchNormalization(Layer):
         return {"global_mean": self.global_mean, "global_variance": self.global_variance}
 
     def forward(self, x):
+        if self.is_training():
+            y = self._forward_training(x)
+        else:
+            y = self._forward_evaluation(x)
+        
+        return (y, x)
+        
+    def _forward_training(self, x):
         mu = np.mean(x)
         sigma = (1/self.M) * np.sum(np.square(x - mu))
         xi = (x - mu) / np.sqrt(sigma + 0.000001)
-        return ((self.gamma * xi + self.beta), x)
-
-
-    def _forward_training(self, x):
-        raise NotImplementedError()
-
+        return self.gamma * xi + self.beta
+    
     def _forward_evaluation(self, x):
         raise NotImplementedError()
 
