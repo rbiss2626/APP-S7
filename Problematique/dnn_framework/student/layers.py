@@ -132,7 +132,7 @@ class ReLU(Layer):
     """
 
     def get_parameters(self):
-        raise NotImplementedError()
+        return {}
 
     def get_buffers(self):
         raise NotImplementedError()

@@ -6,10 +6,10 @@ from mnist import MnistTrainer
 
 def main():
     parser = argparse.ArgumentParser(description='Train Backbone')
-    parser.add_argument('--learning_rate', type=float, help='Choose the learning rate', required=True)
-    parser.add_argument('--batch_size', type=int, help='Set the batch size for the training', required=True)
-    parser.add_argument('--epoch_count', type=int, help='Choose the epoch count', required=True)
-    parser.add_argument('--output_path', type=str, help='Choose the output path', required=True)
+    parser.add_argument('--learning_rate', type=float, help='Choose the learning rate', required=False, default=0.04)
+    parser.add_argument('--batch_size', type=int, help='Set the batch size for the training', required=False, default=50)
+    parser.add_argument('--epoch_count', type=int, help='Choose the epoch count', required=False, default=500)
+    parser.add_argument('--output_path', type=str, help='Choose the output path', required=False, default=".")
 
     parser.add_argument('--checkpoint_path', type=str, help='Choose the output path', default=None)
 
@@ -21,7 +21,7 @@ def main():
 
 
 def create_network(checkpoint_path):
-    layers = []
+    layers = [FullyConnectedLayer(784,128), BatchNormalization(128), ReLU(), FullyConnectedLayer(128,32), BatchNormalization(32), ReLU(), FullyConnectedLayer(32,10)]
     network = Network(layers)
     if checkpoint_path is not None:
         network.load(checkpoint_path)
