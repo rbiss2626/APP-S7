@@ -70,14 +70,21 @@ class BatchNormalization(Layer):
         
         return (y, x)
         
-    def _forward_training(self, x):
-        mu = np.mean(x)
-        sigma = (1/self.M) * np.sum(np.square(x - mu))
+    def _forward_training(self, x):        
+        mu = np.mean(x, axis=0, keepdims=True)
+        sigma = np.var(x, axis=0, keepdims=True)
+
         xi = (x - mu) / np.sqrt(sigma + 0.000001)
-        return self.gamma * xi + self.beta
+        y = self.gamma * xi + self.beta
+
+        self.global_mean = (1-self.alpha)*self.global_mean + self.alpha*mu
+        self.global_variance = (1-self.alpha)*self.global_variance + self.alpha*sigma
+        
+        return y
     
-    def _forward_evaluation(self, x):
-        raise NotImplementedError()
+    def _forward_evaluation(self, x):      
+        xi = (x - self.global_mean) / np.sqrt(self.global_variance + 0.000001)
+        return self.gamma * xi + self.beta
 
     def backward(self, output_grad, cache):
         raise NotImplementedError()
