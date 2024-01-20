@@ -23,7 +23,7 @@ class FullyConnectedLayer(Layer):
         return {"w": self.W, "b": self.b}
 
     def get_buffers(self):
-        raise NotImplementedError()
+        return {}
 
     def forward(self, x):
         Y = self.W @ x.T
@@ -33,8 +33,8 @@ class FullyConnectedLayer(Layer):
 
     def backward(self, output_grad, cache):
         gradx = output_grad @ self.W
-        gradW = output_grad.T @ cache
-        gradB = np.sum(output_grad, axis=0) #output_grad[0,:] + output_grad[1,:]
+        gradW = np.transpose(output_grad) @ cache
+        gradB = np.sum(output_grad, axis=0)
 
         return (gradx, {"w" : gradW, "b": gradB})
 
@@ -46,8 +46,7 @@ class BatchNormalization(Layer):
 
     def __init__(self, input_count, alpha=0.1):
         Layer.__init__(self)
-        
-        self.M = input_count
+
         self.alpha = alpha
 
         self.gamma = np.ones(input_count)
@@ -87,8 +86,23 @@ class BatchNormalization(Layer):
         return self.gamma * xi + self.beta
 
     def backward(self, output_grad, cache):
-        raise NotImplementedError()
+        dLdbeta = np.sum(output_grad, axis=0)
 
+        M = cache.shape[0]
+
+        mu = np.mean(cache, axis=0, keepdims=True)
+        sigma = np.var(cache, axis=0, keepdims=True)
+        x_hat = (cache - mu) / np.sqrt(sigma + 0.000001)
+
+        dLdgamma = np.sum(output_grad*x_hat, axis=0)
+
+        dLdx_hat = output_grad*self.gamma
+        dLdsig = np.sum(dLdx_hat * (cache - mu) * -0.5 * np.power(sigma + 0.000001, -1.5), axis=0, keepdims=True)
+        dLdmu = -np.sum(dLdx_hat/np.sqrt(sigma + 0.000001), axis=0, keepdims=True)
+        dLdxi = (dLdx_hat/np.sqrt(sigma + 0.000001)) + (2/M)*(dLdsig*(cache - mu)) + (1/M)*dLdmu
+
+        return (dLdxi, {"gamma": dLdgamma, "beta": dLdbeta})
+        
 
 class Sigmoid(Layer):
     """
@@ -96,10 +110,10 @@ class Sigmoid(Layer):
     """
 
     def get_parameters(self):
-        raise NotImplementedError()
+        return {}
 
     def get_buffers(self):
-        raise NotImplementedError()
+        return {}
 
     def forward(self, x):
         N = x.shape[0]
@@ -123,7 +137,7 @@ class Sigmoid(Layer):
     def backward(self, output_grad, cache):
         Y, _ = self.forward(cache)
         dLdsig = output_grad * Y * (1 - Y)
-        return (dLdsig, None)
+        return (dLdsig, {})
 
 
 class ReLU(Layer):
@@ -135,7 +149,7 @@ class ReLU(Layer):
         return {}
 
     def get_buffers(self):
-        raise NotImplementedError()
+        return {}
 
     def forward(self, x):
         N = x.shape[0]
@@ -179,4 +193,4 @@ class ReLU(Layer):
                 if cache[j]  >= 0:
                     dLdrelu[j] = 1 
 
-        return (dLdrelu*output_grad, None)
+        return (dLdrelu*output_grad, {})

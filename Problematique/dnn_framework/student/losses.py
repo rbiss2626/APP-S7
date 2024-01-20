@@ -21,7 +21,7 @@ class CrossEntropyLoss(Loss):
             sx = softmax(x[i])
             y = np.zeros(x.shape[1])
             y[target[i]] = 1
-            loss.append(-np.sum(y * np.log(sx)))
+            loss.append(-np.sum(y * np.log(sx + 0.00001)))
             grad.append((sx - y)/x.shape[0])
         
         global_loss = np.mean(loss)
