@@ -48,6 +48,7 @@ class BatchNormalization(Layer):
         Layer.__init__(self)
 
         self.alpha = alpha
+        self.epsilon = 0.000001
 
         self.gamma = np.ones(input_count)
         self.beta = np.zeros(input_count)
@@ -73,7 +74,7 @@ class BatchNormalization(Layer):
         mu = np.mean(x, axis=0, keepdims=True)
         sigma = np.var(x, axis=0, keepdims=True)
 
-        xi = (x - mu) / np.sqrt(sigma + 0.000001)
+        xi = (x - mu) / np.sqrt(sigma + self.epsilon)
         y = self.gamma * xi + self.beta
 
         self.global_mean = (1-self.alpha)*self.global_mean + self.alpha*mu
@@ -82,7 +83,7 @@ class BatchNormalization(Layer):
         return y
     
     def _forward_evaluation(self, x):      
-        xi = (x - self.global_mean) / np.sqrt(self.global_variance + 0.000001)
+        xi = (x - self.global_mean) / np.sqrt(self.global_variance + self.epsilon)
         return self.gamma * xi + self.beta
 
     def backward(self, output_grad, cache):
@@ -92,14 +93,14 @@ class BatchNormalization(Layer):
 
         mu = np.mean(cache, axis=0, keepdims=True)
         sigma = np.var(cache, axis=0, keepdims=True)
-        x_hat = (cache - mu) / np.sqrt(sigma + 0.000001)
+        x_hat = (cache - mu) / np.sqrt(sigma + self.epsilon)
 
         dLdgamma = np.sum(output_grad*x_hat, axis=0)
 
         dLdx_hat = output_grad*self.gamma
-        dLdsig = np.sum(dLdx_hat * (cache - mu) * -0.5 * np.power(sigma + 0.000001, -1.5), axis=0, keepdims=True)
-        dLdmu = -np.sum(dLdx_hat/np.sqrt(sigma + 0.000001), axis=0, keepdims=True)
-        dLdxi = (dLdx_hat/np.sqrt(sigma + 0.000001)) + (2/M)*(dLdsig*(cache - mu)) + (1/M)*dLdmu
+        dLdsig = np.sum(dLdx_hat * (cache - mu) * -0.5 * np.power(sigma + self.epsilon, -1.5), axis=0, keepdims=True)
+        dLdmu = -np.sum(dLdx_hat/np.sqrt(sigma + self.epsilon), axis=0, keepdims=True)
+        dLdxi = (dLdx_hat/np.sqrt(sigma + self.epsilon)) + (2/M)*(dLdsig*(cache - mu)) + (1/M)*dLdmu
 
         return (dLdxi, {"gamma": dLdgamma, "beta": dLdbeta})
         
