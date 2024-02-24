@@ -12,7 +12,7 @@ from metrics import AccuracyMetric, MeanAveragePrecisionMetric, SegmentationInte
 from visualizer import Visualizer
 
 from models.classification_network import getClassificationModel, getClassificationCriterion 
-from models.detection_network import ObjectDetection, getDetectionCriterion
+from models.detection_network import ModelObjectDetection, LossObjectDetection
 
 TRAIN_VALIDATION_SPLIT = 0.9
 CLASS_PROBABILITY_THRESHOLD = 0.5
@@ -49,7 +49,7 @@ class ConveyorCnnTrainer():
         if task == 'classification':
             return getClassificationModel()
         elif task == 'detection':
-            return ObjectDetection()
+            return ModelObjectDetection()
         elif task == 'segmentation':
             # À compléter
             raise NotImplementedError()
@@ -60,7 +60,7 @@ class ConveyorCnnTrainer():
         if task == 'classification':
             return getClassificationCriterion()
         elif task == 'detection':
-            return getDetectionCriterion()
+            return LossObjectDetection()
         elif task == 'segmentation':
             # À compléter
             raise NotImplementedError()
@@ -261,7 +261,12 @@ class ConveyorCnnTrainer():
         #---------------------------------------- Détection ----------------------------------------#
             
         elif task == 'detection':
-            pass
+            output = model(image)
+
+            loss = criterion(output, boxes)
+            
+            # outputStack = torch.stack((output[:, 0:7], output[:, 7:14], output[:, 14:21]), dim=1)
+            metric.accumulate(output, boxes)
         #--------------------------------------- Segmentation --------------------------------------#
 
         elif task == 'segmentation':
@@ -327,6 +332,7 @@ class ConveyorCnnTrainer():
         elif task == 'detection':
             output = model(image)
             loss = criterion(output, boxes)
+            # outputStack = torch.stack((output[:, 0:7], output[:, 7:14], output[:, 14:21]),  dim=1)
             metric.accumulate(output, boxes)
         elif task == 'segmentation':
             output = model(image)
