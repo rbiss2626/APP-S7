@@ -11,6 +11,9 @@ from dataset import ConveyorSimulator
 from metrics import AccuracyMetric, MeanAveragePrecisionMetric, SegmentationIntersectionOverUnionMetric
 from visualizer import Visualizer
 
+from models.classification_network import getClassificationModel, getClassificationCriterion 
+from models.detection_network import ObjectDetection, getDetectionCriterion
+
 TRAIN_VALIDATION_SPLIT = 0.9
 CLASS_PROBABILITY_THRESHOLD = 0.5
 INTERSECTION_OVER_UNION_THRESHOLD = 0.5
@@ -44,11 +47,9 @@ class ConveyorCnnTrainer():
 
     def _create_model(self, task):
         if task == 'classification':
-            # À compléter
-            raise NotImplementedError()
+            return getClassificationModel()
         elif task == 'detection':
-            # À compléter
-            raise NotImplementedError()
+            return ObjectDetection()
         elif task == 'segmentation':
             # À compléter
             raise NotImplementedError()
@@ -57,11 +58,9 @@ class ConveyorCnnTrainer():
 
     def _create_criterion(self, task):
         if task == 'classification':
-            # À compléter
-            raise NotImplementedError()
+            return getClassificationCriterion()
         elif task == 'detection':
-            # À compléter
-            raise NotImplementedError()
+            return getDetectionCriterion()
         elif task == 'segmentation':
             # À compléter
             raise NotImplementedError()
@@ -79,7 +78,7 @@ class ConveyorCnnTrainer():
             raise ValueError('Not supported task')
 
     def test(self):
-        params_test = {'batch_size': self._args.batch_size, 'shuffle': False, 'num_workers': 4}
+        params_test = {'batch_size': self._args.batch_size, 'shuffle': False, 'num_workers': 1}
 
         dataset_test = ConveyorSimulator(self._test_data_path, self.transform)
         test_loader = torch.utils.data.DataLoader(dataset_test, **params_test)
@@ -119,8 +118,8 @@ class ConveyorCnnTrainer():
         best_validation = 0
         nb_worse_validation = 0
 
-        params_train = {'batch_size': self._args.batch_size, 'shuffle': True, 'num_workers': 4}
-        params_validation = {'batch_size': self._args.batch_size, 'shuffle': False, 'num_workers': 4}
+        params_train = {'batch_size': self._args.batch_size, 'shuffle': True, 'num_workers': 1}
+        params_validation = {'batch_size': self._args.batch_size, 'shuffle': False, 'num_workers': 1}
 
         dataset_trainval = ConveyorSimulator(self._train_data_path, self.transform)
         dataset_train, dataset_validation = torch.utils.data.random_split(dataset_trainval,
@@ -246,10 +245,39 @@ class ConveyorCnnTrainer():
                 Si un 0 est présent à (i, 2), aucune croix n'est présente dans l'image i.
         :return: La valeur de la fonction de coût pour le lot
         """
+        optimizer.zero_grad()
+        output = None
+        loss = None
 
-        # À compléter
-        raise NotImplementedError()
+        #-------------------------------------- Classification -------------------------------------#
 
+        if task == 'classification':
+            output = model(image)
+
+            loss = criterion(output, class_labels)
+
+            metric.accumulate(output, class_labels)
+
+        #---------------------------------------- Détection ----------------------------------------#
+            
+        elif task == 'detection':
+            pass
+        #--------------------------------------- Segmentation --------------------------------------#
+
+        elif task == 'segmentation':
+            output = model(image)
+            loss = criterion(output, segmentation_target)
+            metric.accumulate(output, segmentation_target)
+
+
+        else:
+            raise ValueError('Not supported task')
+        
+        loss.backward()
+        optimizer.step()
+
+        return loss
+        
     def _test_batch(self, task, model, criterion, metric, image, segmentation_target, boxes, class_labels):
         """
         Méthode qui effectue une passe de validation ou de test sur un lot de données.
@@ -289,20 +317,38 @@ class ConveyorCnnTrainer():
         """
 
         # À compléter
-        raise NotImplementedError()
+        output = None
+        loss = None
+
+        if task == 'classification':
+            output = model(image)
+            loss = criterion(output, class_labels)
+            metric.accumulate(output, class_labels)
+        elif task == 'detection':
+            output = model(image)
+            loss = criterion(output, boxes)
+            metric.accumulate(output, boxes)
+        elif task == 'segmentation':
+            output = model(image)
+            loss = criterion(output, segmentation_target)
+            metric.accumulate(output, segmentation_target)
+        else:
+            raise ValueError('Not supported task')
+
+        return loss
 
 
 if __name__ == '__main__':
     #  Settings
     parser = argparse.ArgumentParser(description='Conveyor CNN')
-    parser.add_argument('--mode', choices=['train', 'test'], help='The script mode', required=True)
+    parser.add_argument('--mode', choices=['train', 'test'], help='The script mode', default='train')
     parser.add_argument('--task', choices=['classification', 'detection', 'segmentation'],
-                        help='The CNN task', required=True)
-    parser.add_argument('--batch_size', type=int, default=32, help='Batch size for training and testing (default: 32)')
+                        help='The CNN task', default='detection')
+    parser.add_argument('--batch_size', type=int, default=64, help='Batch size for training and testing (default: 32)')
     parser.add_argument('--epochs', type=int, default=20, help='number of epochs for training (default: 20)')
     parser.add_argument('--lr', type=float, default=4e-4, help='learning rate used for training (default: 4e-4)')
     parser.add_argument('--use_gpu', action='store_true', help='use the gpu instead of the cpu')
-    parser.add_argument('--early_stop', type=int, default=25,
+    parser.add_argument('--early_stop', type=int, default=3,
                         help='number of worse validation loss before quitting training (default: 25)')
 
     args = parser.parse_args()
