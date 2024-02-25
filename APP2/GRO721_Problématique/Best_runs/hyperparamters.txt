@@ -3,3 +3,8 @@ Classification
     BatchSize = 64
     Epochs = 12
 
+Detection 
+    LearningRate = 0.0003
+    BatchSize = 64
+    Epochs = 25
+    Dropout = 0.2 -> apres 1er + 2ieme maxpool 
