@@ -6,34 +6,34 @@ class ModelObjectDetection(nn.Module):
      def __init__(self):
         super(ModelObjectDetection, self).__init__()
         self.model = nn.Sequential(
-            nn.Conv2d(1, 64, kernel_size=8, stride=2, padding=11),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(1, 32, kernel_size=5, stride=2, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=1),
+
+            nn.Conv2d(32, 96, kernel_size=5, stride=2, padding=2),
+            nn.BatchNorm2d(96),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
 
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=2),
+            nn.Conv2d(96, 128, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-
-            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
-            nn.Conv2d(256, 128, kernel_size=2, stride=1, padding=1),
+            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.Conv2d(128, 64, kernel_size=2, stride=1, padding=1),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(128, 96, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(96),
             nn.ReLU(),
             # nn.MaxPool2d(kernel_size=2, stride=2),
 
             nn.Flatten(),
 
-            nn.Linear(7744, 3500),
+            nn.Linear(3456, 1000),
             nn.ReLU(),
-            nn.Linear(3500, 1000),
+            nn.Linear(1000, 300),
             nn.ReLU(),
-            nn.Linear(1000, 21))  #3 boites par images avec 7 caracteristiques par boite
+            nn.Linear(300, 21))  #3 boites par images avec 7 caracteristiques par boite
                                   #3 valeurs de classification, 3 valeurs de position + 1 valeurs de presence d'object
 
         self.sigmoid = nn.Sigmoid() 
@@ -64,9 +64,9 @@ class LossObjectDetection(nn.Module):
     def __init__(self):
         super(LossObjectDetection, self).__init__()
 
-        self.MSELoss = nn.MSELoss(reduction="sum")
-        self.BCELoss = nn.BCELoss(reduction="sum")
-        self.CrossLoss = nn.CrossEntropyLoss(reduction="sum")
+        self.MSELoss = nn.MSELoss()
+        self.BCELoss = nn.BCELoss()
+        self.CrossLoss = nn.CrossEntropyLoss()
 
     def forward(self, output, target):
         
