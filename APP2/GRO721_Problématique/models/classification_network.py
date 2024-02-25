@@ -38,18 +38,15 @@ def getClassificationModel():
 
             nn.Flatten(),
 
-            nn.Linear(400, 100),
+            nn.Linear(400, 75),
             nn.ReLU(),
-            nn.Linear(100, 50),
+            nn.Linear(75, 25),
             nn.ReLU(),
-            nn.Linear(50, 10),
-
-            nn.ReLU(),
-            nn.Linear(10, 3), #nous avons 3 classes de sortie
+            nn.Linear(25, 3),  #nous avons 3 classes de sortie
             nn.Sigmoid()
             )
 
     return model
 
 def getClassificationCriterion():
-    return nn.BCELoss(reduction="sum")
+    return nn.BCELoss()
