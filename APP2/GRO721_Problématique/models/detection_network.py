@@ -6,59 +6,48 @@ class ModelObjectDetection(nn.Module):
      def __init__(self):
         super(ModelObjectDetection, self).__init__()
         self.model = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=5, stride=2, padding=1),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=1),
-
-            nn.Conv2d(32, 96, kernel_size=5, stride=2, padding=2),
-            nn.BatchNorm2d(96),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-
-            nn.Conv2d(96, 128, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.Conv2d(128, 96, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(96),
-            nn.ReLU(),
-            # nn.MaxPool2d(kernel_size=2, stride=2),
-
-            nn.Flatten(),
-
-            nn.Linear(3456, 1000),
-            nn.ReLU(),
-            nn.Linear(1000, 300),
-            nn.ReLU(),
-            nn.Linear(300, 21))  #3 boites par images avec 7 caracteristiques par boite
-                                  #3 valeurs de classification, 3 valeurs de position + 1 valeurs de presence d'object
+            nn.Conv2d(1, 16, kernel_size=3, stride=2, padding=1),
+            nn.LeakyReLU(0.1), #16x27x27
+            nn.MaxPool2d(2, 2),
+            nn.Conv2d(16, 32, 3, padding=1),
+            nn.LeakyReLU(0.1), #32x13x13
+            nn.MaxPool2d(2, 2),
+            nn.Conv2d(32, 64, 3, padding=1),
+            nn.LeakyReLU(0.1), #64x6x6
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.LeakyReLU(0.1), #64x6x6
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.LeakyReLU(0.1), #64x6x6
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.LeakyReLU(0.1), #64x6x6
+            nn.MaxPool2d(2, 2),
+            nn.Conv2d(64, 128, 3, padding=1),
+            nn.LeakyReLU(0.1), #128x3x3
+            nn.Conv2d(128, 128, 3, padding=1),
+            nn.LeakyReLU(0.1), #128x3x3
+            nn.Conv2d(128, 128, 3, padding=1),
+            nn.LeakyReLU(0.1), #128x3x3
+            nn.Conv2d(128, 128, 3, padding=1),
+            nn.LeakyReLU(0.1), #128x3x3
+            nn.MaxPool2d(2, 2),
+            nn.Conv2d(128, 256, 3, padding=1),
+            nn.LeakyReLU(0.1), #256x1x1
+            nn.Conv2d(256, 256, 3, padding=1),
+            nn.LeakyReLU(0.1),
+            nn.Conv2d(256, 256, 3, padding=1),
+            nn.LeakyReLU(0.1),
+            nn.Conv2d(256, 21, 3, padding=1),
+            nn.LeakyReLU(0.1)
+            )
 
         self.sigmoid = nn.Sigmoid() 
-        self.softmax = nn.Softmax(dim=1)
     
      def forward(self, x):
-            output = self.model(x)
-            box1Presence = self.sigmoid(output[:, 0:1])
-            box1Class = self.softmax(output[:, 1:4])
-            box1Coord = self.sigmoid(output[:, 4:7])
-            box1 = torch.concat((box1Presence, box1Coord, box1Class), dim=1)
-
-            box2Presence = self.sigmoid(output[:, 7:8])
-            box2Class = self.softmax(output[:, 8:11])
-            box2Coord = self.sigmoid(output[:, 11:14])
-            box2 = torch.concat((box2Presence, box2Coord, box2Class), dim=1)
-
-            box3Presence = self.sigmoid(output[:, 14:15])
-            box3Class = self.softmax(output[:, 15:18])
-            box3Coord = self.sigmoid(output[:, 18:21])
-            box3 = torch.concat((box3Presence, box3Coord, box3Class), dim=1)
-
-            outputStack = torch.stack((box1, box2, box3), dim=1)
-
-            return outputStack
+        output = self.model(x)
+        output = self.sigmoid(output)
+        output = output.flatten()
+        output = output.reshape(len(x), 3, 7)
+        return output
 
 class LossObjectDetection(nn.Module):
     def __init__(self):
