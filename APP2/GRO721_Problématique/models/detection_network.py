@@ -108,13 +108,13 @@ class ModelObjectDetection(nn.Module):
      def __init__(self):
         super(ModelObjectDetection, self).__init__()
         self.model = nn.Sequential(     
-                    nn.Conv2d(1, 32, kernel_size=5, stride=2, padding=1),
-                    nn.BatchNorm2d(32),
+                    nn.Conv2d(1, 64, kernel_size=5, stride=2, padding=1),
+                    nn.BatchNorm2d(64),
                     nn.ReLU(),
                     nn.MaxPool2d(kernel_size=2, stride=1),
                     nn.Dropout(0.2),
 
-                    nn.Conv2d(32, 96, kernel_size=5, stride=2, padding=1),
+                    nn.Conv2d(64, 96, kernel_size=5, stride=2, padding=1),
                     nn.BatchNorm2d(96),
                     nn.ReLU(),
                     nn.MaxPool2d(kernel_size=2, stride=2),
@@ -124,10 +124,10 @@ class ModelObjectDetection(nn.Module):
                     nn.BatchNorm2d(96),
                     nn.ReLU(),
                     # nn.Dropout(0.2),
-                    nn.Conv2d(96, 96, kernel_size=3, stride=1, padding=1),
-                    nn.BatchNorm2d(96),
+                    nn.Conv2d(96, 64, kernel_size=3, stride=1, padding=1),
+                    nn.BatchNorm2d(64),
                     nn.ReLU(),
-                    nn.Conv2d(96, 32, kernel_size=3, stride=1, padding=1),
+                    nn.Conv2d(64, 32, kernel_size=3, stride=1, padding=1),
                     nn.BatchNorm2d(32),
                     nn.ReLU(),
                     # nn.Dropout(0.2),

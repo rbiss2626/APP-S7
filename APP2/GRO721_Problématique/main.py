@@ -13,6 +13,7 @@ from visualizer import Visualizer
 
 from models.classification_network import getClassificationModel, getClassificationCriterion 
 from models.detection_network import ModelObjectDetection, LossObjectDetection
+from models.segmentation_network import UNet, getSegmentationCriterion
 
 TRAIN_VALIDATION_SPLIT = 0.9
 CLASS_PROBABILITY_THRESHOLD = 0.5
@@ -51,8 +52,7 @@ class ConveyorCnnTrainer():
         elif task == 'detection':
             return ModelObjectDetection()
         elif task == 'segmentation':
-            # À compléter
-            raise NotImplementedError()
+            return UNet()
         else:
             raise ValueError('Not supported task')
 
@@ -62,8 +62,7 @@ class ConveyorCnnTrainer():
         elif task == 'detection':
             return LossObjectDetection()
         elif task == 'segmentation':
-            # À compléter
-            raise NotImplementedError()
+            return getSegmentationCriterion()
         else:
             raise ValueError('Not supported task')
 
@@ -348,10 +347,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Conveyor CNN')
     parser.add_argument('--mode', choices=['train', 'test'], help='The script mode', default='train')
     parser.add_argument('--task', choices=['classification', 'detection', 'segmentation'],
-                        help='The CNN task', default='detection')
+                        help='The CNN task', default='segmentation')
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size for training and testing (default: 32)')
-    parser.add_argument('--epochs', type=int, default=25, help='number of epochs for training (default: 20)')
-    parser.add_argument('--lr', type=float, default=0.0003, help='learning rate used for training (default: 4e-4)')
+    parser.add_argument('--epochs', type=int, default=30, help='number of epochs for training (default: 20)')
+    parser.add_argument('--lr', type=float, default=0.005, help='learning rate used for training (default: 4e-4)')
     parser.add_argument('--use_gpu', action='store_true', help='use the gpu instead of the cpu')
     parser.add_argument('--early_stop', type=int, default=3,
                         help='number of worse validation loss before quitting training (default: 25)')
