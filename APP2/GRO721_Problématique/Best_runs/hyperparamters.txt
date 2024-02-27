@@ -8,3 +8,8 @@ Detection
     BatchSize = 64
     Epochs = 25
     Dropout = 0.2 -> apres 1er + 2ieme maxpool 
+
+Segmentation
+    LearningRate = 0.0075
+    BatchSize = 64
+    Epochs = 120
