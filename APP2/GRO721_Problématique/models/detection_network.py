@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
-import torchvision
 from metrics import detection_intersection_over_union
-import torch.nn.functional as F
 
 class ModelObjectDetection(nn.Module):
      def __init__(self):

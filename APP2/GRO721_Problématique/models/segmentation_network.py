@@ -5,59 +5,56 @@ import torch.nn as nn
 class UNet(nn.Module):
     def __init__(self):
         super(UNet, self).__init__()
-        self.hidden = 24
-        input_channels = 1
-        n_classes = 4
 
         # Down 1
-        self.conv_1_1 =nn.Conv2d(input_channels,self.hidden,(3,3), (1,), 1)
+        self.conv_1_1 =nn.Conv2d(1,24,kernel_size=3, stride=1, padding=1)
         self.relu_1_1 = nn.ReLU()
-        self.conv_1_2 = nn.Conv2d(self.hidden, self.hidden, (3,3), (1,), 1)
+        self.conv_1_2 = nn.Conv2d(24, 24, kernel_size=3, stride=1, padding=1)
         self.relu_1_2 = nn.ReLU()
 
         # Down 2
-        self.maxpool_2 = nn.MaxPool2d(kernel_size=2, padding=0, stride=(2,))
-        self.conv_2_1 = nn.Conv2d(self.hidden, self.hidden*4, (3,3), (1,), 1)
+        self.maxpool_2 = nn.MaxPool2d(kernel_size=2, padding=0, stride=2)
+        self.conv_2_1 = nn.Conv2d(24, 96, kernel_size=3, stride=1, padding=1)
         self.relu_2_1 = nn.ReLU()
-        self.conv_2_2 = nn.Conv2d(self.hidden*4, self.hidden*2, (3,3), (1,), 1)
+        self.conv_2_2 = nn.Conv2d(96, 48, kernel_size=3, stride=1, padding=1)
         self.relu_2_2 = nn.ReLU()
 
         # Down 3
-        self.maxpool_3 = nn.MaxPool2d(kernel_size=2, padding=0, stride=(2,))
-        self.conv_3_1 = nn.Conv2d(self.hidden*2, self.hidden*4, (3,3), (1,), 1)
+        self.maxpool_3 = nn.MaxPool2d(kernel_size=2, padding=0, stride=2)
+        self.conv_3_1 = nn.Conv2d(48, 96, kernel_size=3, stride=1, padding=1)
         self.relu_3_1 = nn.ReLU()
-        self.conv_3_2 = nn.Conv2d(self.hidden*4, self.hidden*4, (3,3), (1,), 1)
+        self.conv_3_2 = nn.Conv2d(96, 96, kernel_size=3, stride=1, padding=1)
         self.relu_3_2 = nn.ReLU()
 
         # Down 4
-        self.maxpool_4 = nn.MaxPool2d(kernel_size=2, padding=0, stride=(2,))
-        self.conv_4_1 = nn.Conv2d(self.hidden*4, self.hidden*8, (3,3), (1,), 1)
+        self.maxpool_4 = nn.MaxPool2d(kernel_size=2, padding=0, stride=2)
+        self.conv_4_1 = nn.Conv2d(96, 192, kernel_size=3, stride=1, padding=1)
         self.relu_4_1 = nn.ReLU()
-        self.conv_4_2 = nn.Conv2d(self.hidden*8, self.hidden*4, (3,3), (1,), 1)
+        self.conv_4_2 = nn.Conv2d(192, 96, kernel_size=3, stride=1, padding=1)
         self.relu_4_2 = nn.ReLU()
 
         # Up 5
-        self.upsample_5 = nn.ConvTranspose2d(self.hidden*4, self.hidden*4, (3, 3), (2,), (0,))
-        self.conv_5_1 = nn.Conv2d(self.hidden*8, self.hidden*4, (3,3), (1,), 1)
+        self.upsample_5 = nn.ConvTranspose2d(96, 96, kernel_size=3, stride=2, padding=0)
+        self.conv_5_1 = nn.Conv2d(192, 96, kernel_size=3, stride=1, padding=1)
         self.relu_5_1 = nn.ReLU()
-        self.conv_5_2 = nn.Conv2d(self.hidden*4, self.hidden*2, (3,3), (1,), 1)
+        self.conv_5_2 = nn.Conv2d(96, 48, kernel_size=3, stride=1, padding=1)
         self.relu_5_2 = nn.ReLU()
 
         # Up 6
-        self.upsample_6 = nn.ConvTranspose2d(self.hidden*2, self.hidden*2, (2, 2), (2,), (0,))
-        self.conv_6_1 = nn.Conv2d(self.hidden*4, self.hidden*2, (3,3), (1,), 1)
+        self.upsample_6 = nn.ConvTranspose2d(48, 48, kernel_size=2, stride=2, padding=0)
+        self.conv_6_1 = nn.Conv2d(96, 48, kernel_size=3, stride=1, padding=1)
         self.relu_6_1 = nn.ReLU()
-        self.conv_6_2 = nn.Conv2d(self.hidden*2, self.hidden*1, (3,3), (1,), 1)
+        self.conv_6_2 = nn.Conv2d(48, 24, kernel_size=3, stride=1, padding=1)
         self.relu_6_2 = nn.ReLU()
 
         # Up 7
-        self.upsample_7 = nn.ConvTranspose2d(self.hidden*1, self.hidden*1, (3, 3), (2,), (0,))
-        self.conv_7_1 = nn.Conv2d(self.hidden*2, self.hidden*2, (3,3), (1,), 1)
+        self.upsample_7 = nn.ConvTranspose2d(24, 24, kernel_size=3, stride=2, padding=0)
+        self.conv_7_1 = nn.Conv2d(48, 48, kernel_size=3, stride=1, padding=1)
         self.relu_7_1 = nn.ReLU()
-        self.conv_7_2 = nn.Conv2d(self.hidden*2, self.hidden*1, (3,3), (1,), 1)
+        self.conv_7_2 = nn.Conv2d(48, 24, kernel_size=3, stride=1, padding=1)
         self.relu_7_2 = nn.ReLU()
 
-        self.output_conv = nn.Conv2d(self.hidden, n_classes, kernel_size=1)
+        self.output_conv = nn.Conv2d(24, 4, kernel_size=1)
 
     def forward(self, x):
         # Down 1

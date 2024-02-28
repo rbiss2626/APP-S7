@@ -12,4 +12,4 @@ Detection
 Segmentation
     LearningRate = 0.0075
     BatchSize = 64
-    Epochs = 120
+    Epochs = 50

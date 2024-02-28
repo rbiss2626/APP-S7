@@ -347,7 +347,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Conveyor CNN')
     parser.add_argument('--mode', choices=['train', 'test'], help='The script mode', default='train')
     parser.add_argument('--task', choices=['classification', 'detection', 'segmentation'],
-                        help='The CNN task', default='segmentation')
+                        help='The CNN task', default='classification')
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size for training and testing (default: 32)')
     parser.add_argument('--epochs', type=int, default=120, help='number of epochs for training (default: 20)')
     parser.add_argument('--lr', type=float, default=0.0075, help='learning rate used for training (default: 4e-4)')
