@@ -107,7 +107,7 @@ class ConveyorCnnTrainer():
             test_loss, test_metric.get_name(), test_metric.get_value()))
 
         prediction = self._model(image)
-        visualizer.show_prediction(image[3], prediction[3], segmentation_target[3], boxes[3], class_labels[3])
+        visualizer.show_prediction(image[0], prediction[0], segmentation_target[0], boxes[0], class_labels[0])
 
     def train(self):
         epochs_train_losses = []
@@ -345,12 +345,12 @@ class ConveyorCnnTrainer():
 if __name__ == '__main__':
     #  Settings
     parser = argparse.ArgumentParser(description='Conveyor CNN')
-    parser.add_argument('--mode', choices=['train', 'test'], help='The script mode', default='test')
+    parser.add_argument('--mode', choices=['train', 'test'], help='The script mode', default='train')
     parser.add_argument('--task', choices=['classification', 'detection', 'segmentation'],
-                        help='The CNN task', default='classification')
-    parser.add_argument('--batch_size', type=int, default=32, help='Batch size for training and testing (default: 32)')
-    parser.add_argument('--epochs', type=int, default=20, help='number of epochs for training (default: 20)')
-    parser.add_argument('--lr', type=float, default=0.0002, help='learning rate used for training (default: 4e-4)')
+                        help='The CNN task', default='segmentation')
+    parser.add_argument('--batch_size', type=int, default=64, help='Batch size for training and testing (default: 32)')
+    parser.add_argument('--epochs', type=int, default=120, help='number of epochs for training (default: 20)')
+    parser.add_argument('--lr', type=float, default=0.0075, help='learning rate used for training (default: 4e-4)')
     parser.add_argument('--use_gpu', action='store_true', help='use the gpu instead of the cpu')
     parser.add_argument('--early_stop', type=int, default=3,
                         help='number of worse validation loss before quitting training (default: 25)')

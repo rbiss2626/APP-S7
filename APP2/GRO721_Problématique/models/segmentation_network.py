@@ -5,21 +5,21 @@ import torch.nn as nn
 class UNet(nn.Module):
     def __init__(self):
         super(UNet, self).__init__()
-        self.hidden = 25
+        self.hidden = 24
         input_channels = 1
         n_classes = 4
 
         # Down 1
-        self.conv_1_1 =nn.Conv2d(input_channels,self.hidden,(3,3), (1,), 1)# nn.Conv2d(input_channels, self.hidden, (3,3), (1,), 1)
+        self.conv_1_1 =nn.Conv2d(input_channels,self.hidden,(3,3), (1,), 1)
         self.relu_1_1 = nn.ReLU()
         self.conv_1_2 = nn.Conv2d(self.hidden, self.hidden, (3,3), (1,), 1)
         self.relu_1_2 = nn.ReLU()
 
         # Down 2
         self.maxpool_2 = nn.MaxPool2d(kernel_size=2, padding=0, stride=(2,))
-        self.conv_2_1 = nn.Conv2d(self.hidden, self.hidden*2, (3,3), (1,), 1)
+        self.conv_2_1 = nn.Conv2d(self.hidden, self.hidden*4, (3,3), (1,), 1)
         self.relu_2_1 = nn.ReLU()
-        self.conv_2_2 = nn.Conv2d(self.hidden*2, self.hidden*2, (3,3), (1,), 1)
+        self.conv_2_2 = nn.Conv2d(self.hidden*4, self.hidden*2, (3,3), (1,), 1)
         self.relu_2_2 = nn.ReLU()
 
         # Down 3
@@ -52,9 +52,9 @@ class UNet(nn.Module):
 
         # Up 7
         self.upsample_7 = nn.ConvTranspose2d(self.hidden*1, self.hidden*1, (3, 3), (2,), (0,))
-        self.conv_7_1 = nn.Conv2d(self.hidden*2, self.hidden*1, (3,3), (1,), 1)
+        self.conv_7_1 = nn.Conv2d(self.hidden*2, self.hidden*2, (3,3), (1,), 1)
         self.relu_7_1 = nn.ReLU()
-        self.conv_7_2 = nn.Conv2d(self.hidden*1, self.hidden*1, (3,3), (1,), 1)
+        self.conv_7_2 = nn.Conv2d(self.hidden*2, self.hidden*1, (3,3), (1,), 1)
         self.relu_7_2 = nn.ReLU()
 
         self.output_conv = nn.Conv2d(self.hidden, n_classes, kernel_size=1)
