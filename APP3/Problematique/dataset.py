@@ -4,6 +4,7 @@ from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
 import re
 import pickle
+import os
 
 class HandwrittenWords(Dataset):
     """Ensemble de donnees de mots ecrits a la main."""
@@ -15,26 +16,71 @@ class HandwrittenWords(Dataset):
         self.stop_symbol    = stop_symbol = '<eos>'
 
         self.data = dict()
-        with open(filename, 'rb') as fp:
+        dir_path = os.path.dirname(__file__)
+        dir_path = os.path.join(dir_path, filename)
+        with open(dir_path, 'rb') as fp:
             self.data = pickle.load(fp)
 
         # Extraction des symboles
-        # À compléter
-        
+        self.symb2int = {start_symbol:0, stop_symbol:1, pad_symbol:2}
+        cpt_symb_target = 3
+
+        for i in range(len(self.data)):
+            target, seq = self.data[i]
+
+            target = list(target)
+            for symb in target:
+                if symb not in self.symb2int:
+                    self.symb2int[symb] = cpt_symb_target
+                    cpt_symb_target += 1
+            self.data[i][0] = target
+
         # Ajout du padding aux séquences
-        # À compléter
-        
+        self.max_len = dict()
+
+        self.max_len['target'] = 0
+        for i in range(len(self.data)):
+            if len(self.data[i][0]) > self.max_len['target']:
+                self.max_len['target'] = len(self.data[i][0])
+        self.max_len['target'] += 1
+
+        self.max_len['seq'] = 0
+        for i in range(len(self.data)):
+            if len(self.data[i][1][0]) > self.max_len['seq']:
+                self.max_len['seq'] = len(self.data[i][1][0])
+        self.max_len['seq'] += 1
+
+        for i in range(len(self.data)):
+            self.data[i][0] += [self.stop_symbol] + [self.pad_symbol] * (self.max_len['target'] - len(self.data[i][0]) - 1)
+
+        for i in range(len(self.data)):
+            data_x = self.data[i][1][0][-1]
+            data_y = self.data[i][1][1][-1]
+
+            pad_seq_x = np.array([data_x] * (self.max_len['seq'] - len(self.data[i][1][0]) - 1))
+            pad_seq_y = np.array([data_y] * (self.max_len['seq'] - len(self.data[i][1][1]) - 1))
+            
+            new_arr_x = np.concatenate((self.data[i][1][0], pad_seq_x))
+            new_arr_y = np.concatenate((self.data[i][1][1], pad_seq_y))
+
+            self.data[i][1] = np.array([new_arr_x, new_arr_y])
+            pass
+
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        # À compléter
-        return None, None
+        
+        return self.data[idx][0], self.data[idx][1]
 
     def visualisation(self, idx):
         # Visualisation des échantillons
-        # À compléter (optionel)
-        pass
+        title = self.data[idx][0]
+        x, y = self.data[idx][1]
+
+        plt.scatter(x, y)
+        plt.title(title)
+        plt.show()
         
 
 if __name__ == "__main__":
