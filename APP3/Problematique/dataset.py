@@ -52,6 +52,8 @@ class HandwrittenWords(Dataset):
 
         for i in range(len(self.data)):
             self.data[i][0] += [self.stop_symbol] + [self.pad_symbol] * (self.max_len['target'] - len(self.data[i][0]) - 1)
+            
+        self.int2symb = {v for v in self.symb2int}
 
         for i in range(len(self.data)):
             data_x = self.data[i][1][0][-1]
@@ -70,7 +72,6 @@ class HandwrittenWords(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        
         return self.data[idx][0], self.data[idx][1]
 
     def visualisation(self, idx):

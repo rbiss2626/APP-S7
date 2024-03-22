@@ -22,7 +22,10 @@ if __name__ == '__main__':
     n_workers = 0           # Nombre de threads pour chargement des données (mettre à 0 sur Windows)
 
     # À compléter
-    n_epochs = 0
+    n_epochs = 10
+    batch_size = 50
+    n_hidden = 20
+    n_layers = 2
 
     # ---------------- Fin Paramètres et hyperparamètres ----------------#
 
@@ -35,21 +38,31 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() and not force_cpu else "cpu")
 
     # Instanciation de l'ensemble de données
-    # À compléter
+    _dir_path = os.path.dirname(__file__)
+    _dir_path = os.path.join(_dir_path, 'data_trainval.p')
+    dataset = HandwrittenWords(_dir_path)
 
     
     # Séparation de l'ensemble de données (entraînement et validation)
-    # À compléter
+    dataset_train, dataset_val = torch.utils.data.random_split(dataset,
+                                                                [int(len(dataset) * 0.8),
+                                                                 int(len(dataset) - int(len(dataset) * 0.8))])
    
-
     # Instanciation des dataloaders
-    # À compléter
-
+    dataload_train = DataLoader(dataset_train, batch_size=batch_size, shuffle=True, num_workers=n_workers)
+    dataload_val = DataLoader(dataset_val, batch_size=batch_size, shuffle=False, num_workers=n_workers) 
+    
+    print('Number of epochs : ', n_epochs)
+    print('Training data : ', len(dataset_train))
+    print('Validation data : ', len(dataset_val))
+    print('\n')
 
     # Instanciation du model
-    # À compléter
+    model = trajectory2seq(n_hidden, n_layers, dataset.int2symb, dataset.symb2int, dataset.max_len, device, dataset.max_len)
 
-
+    print('Model : \n', model, '\n')
+    print('Nombre de poids: ', sum([i.numel() for i in model.parameters()]))
+    
     # Initialisation des variables
     # À compléter
 
