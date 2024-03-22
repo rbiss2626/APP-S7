@@ -24,7 +24,7 @@ if __name__ == '__main__':
     # À compléter
     n_epochs = 10
     lr = 0.01
-    batch_size = 50
+    batch_size = 100
     n_hidden = 20
     n_layers = 2
 
@@ -59,12 +59,15 @@ if __name__ == '__main__':
     print('\n')
 
     # Instanciation du model
-    model = trajectory2seq(n_hidden, n_layers, dataset.int2symb, dataset.symb2int, dataset.max_len, device, dataset.max_len)
+    model = trajectory2seq(n_hidden, n_layers, dataset.int2symb, dataset.symb2int, dataset.dict_size, device, dataset.max_len)
 
     print('Model : \n', model, '\n')
     print('Nombre de poids: ', sum([i.numel() for i in model.parameters()]))
     
     # Initialisation des variables
+    train_dist = []
+    train_loss = []
+    fig, ax = plt.subplots(1)
 
 
     if trainning:
@@ -75,18 +78,22 @@ if __name__ == '__main__':
 
         for epoch in range(1, n_epochs + 1):
             # Entraînement
+            model.train()
             running_loss_train = 0
             dist = 0
             
             for batch_idx, data in enumerate(dataload_train):
                 #formatage des donnees
-                target, seq = data
-                seq = seq.to(device).long()
-                # target = target.to(device).long()
+                seq, target = data
+                seq = seq.to(device).float()
+                seq = torch.swapaxes(seq, 1, 2)
+                target = target.to(device).long()
                 
                 optimizer.zero_grad()
                 output, hidden = model(seq)
-                loss = criterion(output.view((-1, model.dict_size['target'])), target.view(-1))
+                a = output.view((-1, model.dict_size['target']))
+                b = target.view(-1)
+                loss = criterion(a, b)
                 
                 loss.backward()
                 optimizer.step()
@@ -100,29 +107,67 @@ if __name__ == '__main__':
                     a = target_list[i]
                     b = output_list[i]
                     Ma = a.index(1)
-                    Mb = b.index(1)
+                    Mb = b.index(1) if 1 in b else len(b)
                     dist += edit_distance(a[:Ma], b[:Mb])/batch_size
-                    
+                
                 print('Train - Epoch: {}/{} [{}/{} ({:.0f}%)] Average Loss: {:.6f} Average Edit Distance: {:.6f}'.format(
                     epoch, n_epochs, batch_idx * batch_size, len(dataload_train.dataset),
                     100. * batch_idx *  batch_size / len(dataload_train.dataset), running_loss_train / (batch_idx + 1),
                     dist/len(dataload_train)), end='\r')
+                    
 
             # Validation
-            # À compléter
+            model.eval()
+            running_loss_val = 0
+            dist_val = 0
+            
+            for data in dataload_val:
+                seq, target = data
+                seq = seq.to(device).float()
+                seq = torch.swapaxes(seq, 1, 2)
+                target = target.to(device).long()
+                
+                optimizer.zero_grad()
+                output, hidden = model(seq)
+                a = output.view((-1, model.dict_size['target']))
+                b = target.view(-1)
+                loss = criterion(a, b)
+                running_loss_val += loss.item()
+                                
+                output_list = torch.argmax(output, dim=1).detach().cpu().tolist()
+                target_list = target.cpu().tolist()
+                M = len(output_list)
+                
+                for i in range(batch_size):
+                    a = target_list[i]
+                    b = output_list[i]
+                    Ma = a.index(1)
+                    Mb = b.index(1) if 1 in b else len(b)
+                    dist_val += edit_distance(a[:Ma], b[:Mb])/batch_size
+                
+            print('\nValidation - Average loss: {:.4f} Average Edit Distance: {:.4f}'.format(running_loss_val/len(dataload_val), dist_val/len(dataload_val)))
+            print('')       
 
             # Ajouter les loss aux listes
-            # À compléter
-
+            if learning_curves:
+                train_loss.append(running_loss_train/len(dataload_train))
+                train_dist.append(dist/len(dataload_train))
+                
+                ax.plot(train_loss, label='training loss')
+                ax.plot(train_dist, label='training distance')
+                ax.legend()
+                plt.draw()
+                plt.pause(0.01)
+                
             # Enregistrer les poids
-            # À compléter
+            torch.save(model,'model.pt')
 
 
             # Affichage
-            if learning_curves:
-                # visualization
-                # À compléter
-                pass
+        if learning_curves:
+            # visualization
+            plt.show()
+            plt.close('all')
 
     if test:
         # Évaluation

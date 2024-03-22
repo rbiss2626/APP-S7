@@ -58,14 +58,16 @@ class HandwrittenWords(Dataset):
             data_x = self.data[i][1][0][-1]
             data_y = self.data[i][1][1][-1]
 
-            pad_seq_x = np.array([data_x] * (self.max_len['seq'] - len(self.data[i][1][0]) - 1))
-            pad_seq_y = np.array([data_y] * (self.max_len['seq'] - len(self.data[i][1][1]) - 1))
+            pad_seq_x = np.array([data_x] * (self.max_len['seq'] - len(self.data[i][1][0])))
+            pad_seq_y = np.array([data_y] * (self.max_len['seq'] - len(self.data[i][1][1])))
             
             new_arr_x = np.concatenate((self.data[i][1][0], pad_seq_x))
             new_arr_y = np.concatenate((self.data[i][1][1], pad_seq_y))
 
             self.data[i][1] = np.array([new_arr_x, new_arr_y])
             pass
+        
+        self.dict_size = {'target':len(self.int2symb)}
 
     def __len__(self):
         return len(self.data)
@@ -75,7 +77,7 @@ class HandwrittenWords(Dataset):
         target = self.data[idx][0]
         
         target = [self.symb2int[i] for i in target]
-        
+
         return torch.tensor(np.array(dataSeq)), torch.tensor(target)
 
     def visualisation(self, idx):
