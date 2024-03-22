@@ -48,7 +48,6 @@ class HandwrittenWords(Dataset):
         for i in range(len(self.data)):
             if len(self.data[i][1][0]) > self.max_len['seq']:
                 self.max_len['seq'] = len(self.data[i][1][0])
-        self.max_len['seq'] += 1
 
         for i in range(len(self.data)):
             self.data[i][0] += [self.stop_symbol] + [self.pad_symbol] * (self.max_len['target'] - len(self.data[i][0]) - 1)
@@ -72,7 +71,12 @@ class HandwrittenWords(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        return self.data[idx][0], self.data[idx][1]
+        dataSeq = self.data[idx][1]
+        target = self.data[idx][0]
+        
+        target = [self.symb2int[i] for i in target]
+        
+        return torch.tensor(np.array(dataSeq)), torch.tensor(target)
 
     def visualisation(self, idx):
         # Visualisation des échantillons

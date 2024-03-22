@@ -21,7 +21,8 @@ class trajectory2seq(nn.Module):
 
         # Definition des couches
         # Couches pour rnn
-        self.embeding = nn.Embedding(self.dict_size['seq'], self.hidden_dim)
+        self.embeding_encoder = nn.Embedding(self.dict_size['seq'], self.hidden_dim)
+        self.embeding_decoder = nn.Embedding(self.dict_size['target'], self.hidden_dim)
         self.encoder_layer = nn.GRU(self.hidden_dim, self.hidden_dim, self.n_layers, batch_first=True)
         self.decoder_layer = nn.GRU(self.hidden_dim, self.hidden_dim, self.n_layers, batch_first=True)
 
@@ -34,17 +35,18 @@ class trajectory2seq(nn.Module):
 
     def forward(self, x):
         # Encoder
-        out_enc, hidden = self.encoder_layer(self.embeding(x))
+        # x = x.float()
+        out_enc, hidden = self.encoder_layer(self.embeding_encoder(x))
 
         # Decoder
         max_len = self.maxlen['target']
         batch_size = hidden.shape[1]
-        vec_in = torch.zeros((batch_size, 1)).to(self.device).long()
+        vec_in = torch.zeros((2, batch_size, 1)).to(self.device).float()
         vec_out = torch.zeros((batch_size, max_len, self.dict_size['target'])).to(self.device)
 
         # Boucle pour les les symboles de sortie
         for i in range(max_len):
-            out_dec, hidden = self.decoder_layer(vec_in, hidden)
+            out_dec, hidden = self.decoder_layer(self.embeding_decoder(vec_in), hidden)
             output = self.fc(out_dec)
             vec_out[:][i][:] = output.squeeze(1)
 

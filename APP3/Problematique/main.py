@@ -23,6 +23,7 @@ if __name__ == '__main__':
 
     # À compléter
     n_epochs = 10
+    lr = 0.01
     batch_size = 50
     n_hidden = 20
     n_layers = 2
@@ -64,17 +65,49 @@ if __name__ == '__main__':
     print('Nombre de poids: ', sum([i.numel() for i in model.parameters()]))
     
     # Initialisation des variables
-    # À compléter
+
 
     if trainning:
 
         # Fonction de coût et optimizateur
-        # À compléter
+        criterion = nn.CrossEntropyLoss(ignore_index=2)
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
         for epoch in range(1, n_epochs + 1):
             # Entraînement
-            # À compléter
+            running_loss_train = 0
+            dist = 0
             
+            for batch_idx, data in enumerate(dataload_train):
+                #formatage des donnees
+                target, seq = data
+                seq = seq.to(device).long()
+                # target = target.to(device).long()
+                
+                optimizer.zero_grad()
+                output, hidden = model(seq)
+                loss = criterion(output.view((-1, model.dict_size['target'])), target.view(-1))
+                
+                loss.backward()
+                optimizer.step()
+                running_loss_train += loss.item()
+                
+                output_list = torch.argmax(output, dim=1).detach().cpu().tolist()
+                target_list = target.cpu().tolist()
+                M = len(output_list)
+                
+                for i in range(batch_size):
+                    a = target_list[i]
+                    b = output_list[i]
+                    Ma = a.index(1)
+                    Mb = b.index(1)
+                    dist += edit_distance(a[:Ma], b[:Mb])/batch_size
+                    
+                print('Train - Epoch: {}/{} [{}/{} ({:.0f}%)] Average Loss: {:.6f} Average Edit Distance: {:.6f}'.format(
+                    epoch, n_epochs, batch_idx * batch_size, len(dataload_train.dataset),
+                    100. * batch_idx *  batch_size / len(dataload_train.dataset), running_loss_train / (batch_idx + 1),
+                    dist/len(dataload_train)), end='\r')
+
             # Validation
             # À compléter
 
