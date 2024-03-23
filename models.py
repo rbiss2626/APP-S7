@@ -83,7 +83,6 @@ class trajectory2seq(nn.Module):
             attention = torch.bmm(attNorm.transpose(1,2), encoder_outs) 
             out = torch.cat((out, attention), dim=2)
             output = self.fcAtt(out)
-            output = self.softmax(output)
             vec_out[:, i, :] = output.squeeze(1)
             vec_in = output.argmax(dim=2) # on sort l'index de la valeur la plus haute
 
