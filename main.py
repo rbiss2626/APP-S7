@@ -64,7 +64,7 @@ if __name__ == '__main__':
     if trainning:
 
         if learning_curves:
-            train_dist =[] # Historique des distances
+            val_loss =[] # Historique des distances
             train_loss=[] # Historique des coûts
             fig, ax = plt.subplots(1) # Initialisation figure
 
@@ -163,10 +163,11 @@ if __name__ == '__main__':
             # Affichage graphique
             if learning_curves:
                 train_loss.append(running_loss_train/len(dataload_train))
-                train_dist.append(dist/len(dataload_train))
+                # train_dist.append(dist/len(dataload_train))
+                val_loss.append(running_loss_val/len(dataload_val))
                 ax.cla()
                 ax.plot(train_loss, label='training loss')
-                ax.plot(train_dist, label='training distance')
+                ax.plot(val_loss, label='validation loss')
                 ax.legend()
                 plt.draw()
                 plt.pause(0.01)
