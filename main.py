@@ -116,6 +116,7 @@ if __name__ == '__main__':
 
             # Validation
             running_loss_val = 0
+            dist=0
             model.eval()
             for batch_idx, data in enumerate(dataload_val):
                 in_seq, target_seq = [obj.to(device).float() for obj in data]
