@@ -27,10 +27,10 @@ class trajectory2seq(nn.Module):
         self.decoder_layer = nn.GRU(self.hidden_dim, self.hidden_dim, self.n_layers, batch_first=True)
 
         # Couches pour attention
-        # À compléter
-
+        self.att_softmax = nn.Softmax()
+            
         # Couche dense pour la sortie
-        self.fc = nn.Linear(self.hidden_dim, self.dict_size['target'])
+        self.fc = nn.Linear(self.hidden_dim*2, self.dict_size['target'])  
         self.to(device)
 
     def forward(self, x):
@@ -46,6 +46,13 @@ class trajectory2seq(nn.Module):
         # Boucle pour les les symboles de sortie
         for i in range(max_len):
             out_dec, hidden = self.decoder_layer(self.embeding_decoder(vec_in), hidden)
+            
+            # Calcul de l'attention                
+            similarity = torch.matmul(out_enc, out_dec.transpose(1, 2))
+            att_w = self.att_softmax(similarity).transpose(1, 2)
+            attention = torch.bmm(att_w, out_enc)
+            out_dec = torch.cat((out_dec, attention), dim=2)
+            
             output = self.fc(out_dec)
             vec_out[:, i, :] = output.squeeze(1)
 

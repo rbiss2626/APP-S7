@@ -52,7 +52,7 @@ class HandwrittenWords(Dataset):
         for i in range(len(self.data)):
             self.data[i][0] += [self.stop_symbol] + [self.pad_symbol] * (self.max_len['target'] - len(self.data[i][0]) - 1)
             
-        self.int2symb = {v for v in self.symb2int}
+        self.int2symb = [v for v in self.symb2int]
 
         for i in range(len(self.data)):
             data_x = self.data[i][1][0][-1]

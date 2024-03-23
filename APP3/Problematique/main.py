@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     # À compléter
     n_epochs = 10
-    lr = 0.01
+    lr = 0.1
     batch_size = 100
     n_hidden = 20
     n_layers = 2
@@ -115,7 +115,11 @@ if __name__ == '__main__':
                     100. * batch_idx *  batch_size / len(dataload_train.dataset), running_loss_train / (batch_idx + 1),
                     dist/len(dataload_train)), end='\r')
                     
-
+            print('Train - Epoch: {}/{} [{}/{} ({:.0f}%)] Average Loss: {:.6f} Average Edit Distance: {:.6f}'.format(
+                    epoch, n_epochs, (batch_idx+1) * batch_size, len(dataload_train.dataset),
+                    100. * batch_idx *  batch_size / len(dataload_train.dataset), running_loss_train / (batch_idx + 1),
+                    dist/len(dataload_train)), end='\r')
+            
             # Validation
             model.eval()
             running_loss_val = 0
@@ -151,10 +155,10 @@ if __name__ == '__main__':
             # Ajouter les loss aux listes
             if learning_curves:
                 train_loss.append(running_loss_train/len(dataload_train))
-                train_dist.append(dist/len(dataload_train))
-                
+                train_dist.append(running_loss_val/len(dataload_val))
+                ax.cla()
                 ax.plot(train_loss, label='training loss')
-                ax.plot(train_dist, label='training distance')
+                ax.plot(train_dist, label='validation loss')
                 ax.legend()
                 plt.draw()
                 plt.pause(0.01)
@@ -163,11 +167,33 @@ if __name__ == '__main__':
             torch.save(model,'model.pt')
 
 
-            # Affichage
+        # Affichage
         if learning_curves:
             # visualization
             plt.show()
             plt.close('all')
+        
+        if gen_test_images:
+            model = torch.load('model.pt')
+            model.eval()
+            dataset.symb2int = model.symb2int
+            dataset.int2symb = model.int2symb
+
+            for num in range(10):
+                # extraction d'une séquence du dataset de validation
+                randNum = np.random.randint(0,len(dataset))
+                seq, target = dataset[randNum]
+                seq = torch.swapaxes(seq,0,1)
+                seq = torch.unsqueeze(seq,0)
+
+                prediction, _ = model(seq.float())            
+                out = torch.argmax(prediction, dim=2).detach().cpu()[0,:].tolist()
+                out_seq = [model.int2symb[i] for i in out]
+                if '<eos>' in out_seq:
+                    print(out_seq[:out_seq.index('<eos>')+1])
+                else:
+                    print(out_seq)
+                # dataset.visualisation(randNum)
 
     if test:
         # Évaluation
