@@ -24,7 +24,7 @@ if __name__ == '__main__':
     # À compléter
     batch_size = 100            # Taille des lots
     n_epochs = 50               # Nombre d'iteration sur l'ensemble de donnees
-    lr = 0.01                   # Taux d'apprentissage pour l'optimizateur
+    lr = 0.1                   # Taux d'apprentissage pour l'optimizateur
 
     n_hidden = 20               # Nombre de neurones caches par couche 
     n_layers = 2               # Nombre de de couches
@@ -56,7 +56,9 @@ if __name__ == '__main__':
     print('\n')
 
     # Instanciation du model
-    model = trajectory2seq(n_hidden,n_layers,dataset.int2symb,dataset.symb2int,dataset.dictSize,device,dataset.maxLen)
+    model = trajectory2seq(n_hidden,n_layers,dataset.int2symb,dataset.symb2int,dataset.dictSize,device,dataset.maxLen, withAttention=True)
+    print(model)
+    print('Nombre de poids: ', sum([i.numel() for i in model.parameters()]))
 
     best_validation = -1 
     if trainning:
@@ -73,6 +75,7 @@ if __name__ == '__main__':
         for epoch in range(1, n_epochs + 1):
             running_loss_train = 0
             dist=0
+            model.train()
             for batch_idx, data in enumerate(dataload_train):
                 # Formatage des données
                 seq, target = data
@@ -114,7 +117,7 @@ if __name__ == '__main__':
             # Validation
             running_loss_val = 0
             model.eval()
-            for data in dataload_val:
+            for batch_idx, data in enumerate(dataload_val):
                 in_seq, target_seq = [obj.to(device).float() for obj in data]
 
                 # ---------------------- Laboratoire 1 - Question 3 - Début de la section à compléter ------------------
@@ -181,7 +184,7 @@ if __name__ == '__main__':
             dataset.symb2int = model.symb2int
             dataset.int2symb = model.int2symb
 
-            for num in range(10):
+            for num in range(5):
                 # extraction d'une séquence du dataset de validation
                 randNum = np.random.randint(0,len(dataset))
                 seq, target = dataset[randNum]
@@ -191,7 +194,11 @@ if __name__ == '__main__':
                 prediction, _, _ = model(seq.float())            
                 out = torch.argmax(prediction, dim=2).detach().cpu()[0,:].tolist()
                 out_seq = [model.int2symb[i] for i in out]
-                print(out_seq[:out_seq.index('<eos>')+1])
+                if '<eos>' in out_seq:
+                    print(out_seq[:out_seq.index('<eos>')+1])
+                else:
+                    print(out_seq)
+
                 dataset.visualisation(randNum)
 
 
