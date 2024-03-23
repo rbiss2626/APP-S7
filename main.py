@@ -58,13 +58,7 @@ if __name__ == '__main__':
     # Instanciation du model
     model = trajectory2seq(n_hidden,n_layers,dataset.int2symb,dataset.symb2int,dataset.dictSize,device,dataset.maxLen)
 
-
-
-    # Initialisation des variables
-
-    # ??
-
-    
+    best_validation = -1 
     if trainning:
 
         if learning_curves:
@@ -135,6 +129,7 @@ if __name__ == '__main__':
                 
                 # loss.backward() # calcul du gradient
                 # optimizer.step() # Mise a jour des poids
+
                 running_loss_val += loss.item()
             
                 # calcul de la distance d'édition
@@ -154,7 +149,13 @@ if __name__ == '__main__':
                     epoch, n_epochs, batch_idx * batch_size, len(dataload_val.dataset),
                     100. * batch_idx *  batch_size / len(dataload_val.dataset), running_loss_val / (batch_idx + 1),
                     dist/len(dataload_val)), end='\r')
+
             print('\n')
+            if(dist/len(dataload_val) < best_validation) or best_validation < 0:
+                best_validation = dist/len(dataload_val)
+                print('Saving new best model\n')
+                torch.save(model.state_dict(), 'model.pt')
+
             # Affichage graphique
             if learning_curves:
                 train_loss.append(running_loss_train/len(dataload_train))
