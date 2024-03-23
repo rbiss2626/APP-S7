@@ -30,7 +30,8 @@ class trajectory2seq(nn.Module):
 
         # Couches pour attention
         self.softmax = nn.Softmax()
-        self.fcAtt = nn.Linear(self.hidden_dim*2, self.dict_size) #on sort un one-hot pour les lettres
+        self.fcAttCombine = nn.Linear(self.hidden_dim*2, self.hidden_dim) 
+        self.fcHiddenQuerry = nn.Linear(self.hidden_dim, self.hidden_dim) 
 
         # Couche dense pour la sortie
         self.fc = nn.Linear(self.hidden_dim, self.dict_size) #on sort un one-hot pour les lettres
@@ -78,12 +79,14 @@ class trajectory2seq(nn.Module):
         # Boucle pour tous les symboles de sortie
         for i in range(max_len):
             out, hidden = self.decoder_layer(self.target_embedding(vec_in), hidden) # ici on fait l'embedding, car on a la lettre précédente en entrée
-            simmilarity = torch.matmul(encoder_outs, out.transpose(1,2))
+            attOut = self.fcHiddenQuerry(out)
+            simmilarity = torch.matmul(encoder_outs, attOut.transpose(1,2))
             attNorm = self.softmax(simmilarity) 
             attention = torch.bmm(attNorm.transpose(1,2), encoder_outs) 
             out = torch.cat((out, attention), dim=2)
-            output = self.fcAtt(out)
+            out = self.fcAttCombine(out)
+            output = self.fc(out)
             vec_out[:, i, :] = output.squeeze(1)
-            vec_in = output.argmax(dim=2) # on sort l'index de la valeur la plus haute
+            vec_in = output.argmax(dim=-1) # on sort l'index de la valeur la plus haute
 
         return vec_out, hidden, None

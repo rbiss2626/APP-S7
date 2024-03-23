@@ -23,11 +23,11 @@ if __name__ == '__main__':
 
     # À compléter
     batch_size = 100            # Taille des lots
-    n_epochs = 50               # Nombre d'iteration sur l'ensemble de donnees
-    lr = 0.1                   # Taux d'apprentissage pour l'optimizateur
+    n_epochs = 50              # Nombre d'iteration sur l'ensemble de donnees
+    lr = 0.01                   # Taux d'apprentissage pour l'optimizateur
 
-    n_hidden = 20               # Nombre de neurones caches par couche 
-    n_layers = 2               # Nombre de de couches
+    n_hidden = 25               # Nombre de neurones caches par couche
+    n_layers = 1               # Nombre de de couches
 
     # ---------------- Fin Paramètres et hyperparamètres ----------------#
 
@@ -36,8 +36,10 @@ if __name__ == '__main__':
         torch.manual_seed(seed) 
         np.random.seed(seed)
 
+    print(torch.cuda.is_available())
     # Choix du device
     device = torch.device("cuda" if torch.cuda.is_available() and not force_cpu else "cpu")
+    # device = torch.device("cuda")
 
     # Instanciation de l'ensemble de données
     dataset = HandwrittenWords('data_trainval.p')
@@ -57,7 +59,7 @@ if __name__ == '__main__':
 
     # Instanciation du model
     model = trajectory2seq(n_hidden,n_layers,dataset.int2symb,dataset.symb2int,dataset.dictSize,device,dataset.maxLen, withAttention=True)
-    print(model)
+    model = model.to(device)
     print('Nombre de poids: ', sum([i.numel() for i in model.parameters()]))
 
     best_validation = -1 
@@ -158,7 +160,7 @@ if __name__ == '__main__':
             if(dist/len(dataload_val) < best_validation) or best_validation < 0:
                 best_validation = dist/len(dataload_val)
                 print('Saving new best model\n')
-                torch.save(model.state_dict(), 'model.pt')
+                torch.save(model, 'model.pt')
 
             # Affichage graphique
             if learning_curves:
@@ -173,36 +175,63 @@ if __name__ == '__main__':
                 plt.pause(0.01)
 
             # Enregistrer les poids
-            torch.save(model,'model.pt')
+            # torch.save(model,'model.pt')
 
             # Terminer l'affichage d'entraînement
         if learning_curves:
             plt.show()
             plt.close('all')
 
+        # if gen_test_images:
+        #     model = torch.load('model.pt')
+        #     model = model.to(device)
+        #     model.eval()
+        #     dataset.symb2int = model.symb2int
+        #     dataset.int2symb = model.int2symb
+
+        #     for num in range(5):
+        #         # extraction d'une séquence du dataset de validation
+        #         randNum = np.random.randint(0,len(dataset))
+        #         seq, target = dataset[randNum]
+        #         seq = seq.to(device)
+        #         target = target.to(device)
+        #         seq = torch.swapaxes(seq,0,1)
+        #         seq = torch.unsqueeze(seq,0)
+
+        #         prediction, _, _ = model(seq.float())            
+        #         prediction = torch.nn.functional.softmax(prediction,dim=2)
+        #         out = torch.argmax(prediction, dim=2).detach().cpu()[0,:].tolist()
+        #         out_seq = [model.int2symb[i] for i in out]
+        #         if '<eos>' in out_seq:
+        #             print(out_seq[:out_seq.index('<eos>')+1])
+        #         else:
+        #             print(out_seq)
+
+        #         dataset.visualisation(randNum)
         if gen_test_images:
-            model = torch.load('model.pt')
-            model.eval()
-            dataset.symb2int = model.symb2int
-            dataset.int2symb = model.int2symb
+                    model = torch.load('model.pt')
+                    model.eval()
+                    dataset.symb2int = model.symb2int
+                    dataset.int2symb = model.int2symb
 
-            for num in range(5):
-                # extraction d'une séquence du dataset de validation
-                randNum = np.random.randint(0,len(dataset))
-                seq, target = dataset[randNum]
-                seq = torch.swapaxes(seq,0,1)
-                seq = torch.unsqueeze(seq,0)
+                    for data in dataload_val:
+                        seq, target = data
+                        seq = torch.swapaxes(seq, 1, 2)
+                        seq.unsqueeze(0)
+                        seq = seq.to(device).float()
+                        target = target.to(device).long()
 
-                prediction, _, _ = model(seq.float())            
-                out = torch.argmax(prediction, dim=2).detach().cpu()[0,:].tolist()
-                out_seq = [model.int2symb[i] for i in out]
-                if '<eos>' in out_seq:
-                    print(out_seq[:out_seq.index('<eos>')+1])
-                else:
-                    print(out_seq)
-
-                dataset.visualisation(randNum)
-
+                        output, hidden, _ = model(seq)
+                        out = torch.argmax(output, dim=2).detach().cpu()[0,:].tolist()
+                        out_seq = [model.int2symb[i] for i in out]
+                        target = [model.int2symb[i] for i in target.detach().cpu()[0,:].tolist()]
+                        print("target: ")
+                        print(target[:target.index('<eos>')+1])
+                        print("inference: ")
+                        if '<eos>' in out_seq:
+                            print(out_seq[:out_seq.index('<eos>')+1])
+                        else:
+                            print(out_seq)
 
 
 
