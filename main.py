@@ -176,6 +176,7 @@ if __name__ == '__main__':
 
             # Enregistrer les poids
             # torch.save(model,'model.pt')
+        print("best validation: ", best_validation)
 
             # Terminer l'affichage d'entraînement
         if learning_curves:
