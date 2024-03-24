@@ -52,22 +52,23 @@ class HandwrittenWords(Dataset):
         for i in range(len(self.data)):
             self.data[i][0] += [self.stop_symbol] + [self.pad_symbol] * (self.max_len['target'] - len(self.data[i][0]) - 1)
             
-        self.int2symb = [v for v in self.symb2int]
+        self.int2symb = {v:k for k,v in self.symb2int.items()}
 
         for i in range(len(self.data)):
-            data_x = self.data[i][1][0][-1]
-            data_y = self.data[i][1][1][-1]
-
-            pad_seq_x = np.array([data_x] * (self.max_len['seq'] - len(self.data[i][1][0])))
-            pad_seq_y = np.array([data_y] * (self.max_len['seq'] - len(self.data[i][1][1])))
+            data_x = 0
+            data_y = 0
             
-            new_arr_x = np.concatenate((self.data[i][1][0], pad_seq_x))
-            new_arr_y = np.concatenate((self.data[i][1][1], pad_seq_y))
-
-            self.data[i][1] = np.array([new_arr_x, new_arr_y])
-            pass
+            self.data[i][1] = torch.diff(torch.tensor(self.data[i][1]), dim=1).cpu().detach().numpy()
+            
+            pad_sequence_x = np.array([data_x] * (self.max_len['seq'] - self.data[i][1].shape[1] - 1))
+            pad_sequence_y = np.array([data_y] * (self.max_len['seq'] - self.data[i][1].shape[1] - 1))
+            
+            temp_x = np.concatenate((self.data[i][1][0], pad_sequence_x))
+            temp_y = np.concatenate((self.data[i][1][1], pad_sequence_y))
+            
+            self.data[i][1] = np.array([temp_x, temp_y])
         
-        self.dict_size = {'target':len(self.int2symb)}
+        self.dict_size = len(self.int2symb)
 
     def __len__(self):
         return len(self.data)
