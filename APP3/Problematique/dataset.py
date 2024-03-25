@@ -22,17 +22,12 @@ class HandwrittenWords(Dataset):
             self.data = pickle.load(fp)
 
         # Extraction des symboles
-        self.symb2int = {start_symbol:0, stop_symbol:1, pad_symbol:2}
-        cpt_symb_target = 3
-
+        self.symb2int = {start_symbol:0, stop_symbol:1, pad_symbol:2, 'a':3, 'b':4, 'c':5, 'd':6, 'e':7, 'f':8, 'g':9, 'h':10, 'i':11, 'j':12, 'k':13, 'l':14, 'm':15, 'n':16, 'o':17, 'p':18, 'q':19, 'r':20, 's':21, 't':22, 'u':23, 'v':24, 'w':25, 'x':26, 'y':27, 'z':28}
+        self.int2symb = {v:k for k,v in self.symb2int.items()}
+        
         for i in range(len(self.data)):
             target, seq = self.data[i]
-
             target = list(target)
-            for symb in target:
-                if symb not in self.symb2int:
-                    self.symb2int[symb] = cpt_symb_target
-                    cpt_symb_target += 1
             self.data[i][0] = target
 
         # Ajout du padding aux séquences
@@ -52,8 +47,6 @@ class HandwrittenWords(Dataset):
         for i in range(len(self.data)):
             self.data[i][0] += [self.stop_symbol] + [self.pad_symbol] * (self.max_len['target'] - len(self.data[i][0]) - 1)
             
-        self.int2symb = {v:k for k,v in self.symb2int.items()}
-
         for i in range(len(self.data)):
             data_x = 0
             data_y = 0
@@ -96,3 +89,4 @@ if __name__ == "__main__":
     a = HandwrittenWords('data_trainval.p')
     for i in range(10):
         a.visualisation(np.random.randint(0, len(a)))
+

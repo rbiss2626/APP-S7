@@ -11,11 +11,14 @@ from dataset import *
 from metrics import *
 import os
 
+
 if __name__ == '__main__':
 
     # ---------------- Paramètres et hyperparamètres ----------------#
     force_cpu = False           # Forcer a utiliser le cpu?
     trainning = True           # Entrainement?
+    attention = True            # Attention?
+    bidirectionnal = True      # Bidirectionnel?
     test = True                # Test?
     learning_curves = True     # Affichage des courbes d'entrainement?
     gen_test_images = True     # Génération images test?
@@ -23,8 +26,8 @@ if __name__ == '__main__':
     n_workers = 0           # Nombre de threads pour chargement des données (mettre à 0 sur Windows)
 
     # À compléter
-    n_epochs = 100
-    lr = 0.01
+    n_epochs = 50
+    lr = 0.008
     batch_size = 100
     n_hidden = 18
     n_layers = 2
@@ -46,21 +49,26 @@ if __name__ == '__main__':
 
     
     # Séparation de l'ensemble de données (entraînement et validation)
-    dataset_train, dataset_val = torch.utils.data.random_split(dataset,
-                                                                [int(len(dataset) * 0.8),
-                                                                 int(len(dataset) - int(len(dataset) * 0.8))])
+    dataset_train, dataset_val, dataset_test = torch.utils.data.random_split(dataset,
+                                                                [int(len(dataset) * 0.80),
+                                                                 int(len(dataset) * 0.1),
+                                                                 int(len(dataset) * 0.1)])
    
     # Instanciation des dataloaders
     dataload_train = DataLoader(dataset_train, batch_size=batch_size, shuffle=True, num_workers=n_workers)
     dataload_val = DataLoader(dataset_val, batch_size=batch_size, shuffle=False, num_workers=n_workers) 
+    dataload_test = DataLoader(dataset_test, batch_size=batch_size, shuffle=False, num_workers=n_workers)
     
     print('Number of epochs : ', n_epochs)
     print('Training data : ', len(dataset_train))
     print('Validation data : ', len(dataset_val))
+    print('Test data : ', len(dataset_test))
     print('\n')
 
     # Instanciation du model
-    model = trajectory2seq(n_hidden, n_layers, dataset.int2symb, dataset.symb2int, dataset.dict_size, device, dataset.max_len)
+    model = trajectory2seq(hidden_dim=n_hidden, n_layers=n_layers, int2symb=dataset.int2symb, symb2int=dataset.symb2int,
+                           dict_size=dataset.dict_size, device=device, maxlen=dataset.max_len,
+                           with_attention=attention, with_bidirectionnal=bidirectionnal)
 
     print('Model : \n', model, '\n')
     print('Nombre de poids: ', sum([i.numel() for i in model.parameters()]))
@@ -71,7 +79,6 @@ if __name__ == '__main__':
     fig, ax = plt.subplots(1)
     
     best_val_dist = -1
-
 
     if trainning:
 
@@ -93,11 +100,9 @@ if __name__ == '__main__':
                 target = target.to(device).long()
                 
                 optimizer.zero_grad()
-                output, hidden = model(seq)
-                a = output.view((-1, model.dict_size))
-                b = target.view(-1)
-                loss = criterion(a, b)
-                
+                output, hidden, att = model(seq)
+                loss = criterion(output.view((-1, model.dict_size)), target.view(-1))
+
                 loss.backward()
                 optimizer.step()
                 running_loss_train += loss.item()
@@ -134,11 +139,8 @@ if __name__ == '__main__':
                 seq = torch.swapaxes(seq, 1, 2)
                 target = target.to(device).long()
                 
-                optimizer.zero_grad()
-                output, hidden = model(seq)
-                a = output.view((-1, model.dict_size))
-                b = target.view(-1)
-                loss = criterion(a, b)
+                output, hidden, att = model(seq)
+                loss = criterion(output.view((-1, model.dict_size)), target.view(-1))
                 running_loss_val += loss.item()
                                 
                 output_list = torch.argmax(output, dim=-1).detach().cpu().tolist()
@@ -176,43 +178,115 @@ if __name__ == '__main__':
             # visualization
             plt.show()
             plt.close('all')
-        
-        if gen_test_images:
-            model = torch.load('model.pt')
-            model.eval()
-            dataset.symb2int = model.symb2int
-            dataset.int2symb = model.int2symb
-            
-            for data in dataload_val:
-                seq, target = data
-                seq = torch.swapaxes(seq, 1, 2)
-                seq.unsqueeze(0)
-                seq = seq.to(device).float()
-                target = target.to(device).long()
-                
-                output, hidden = model(seq)
-                out = torch.argmax(output, dim=2).detach().cpu()[0,:].tolist()
-                out_seq = [model.int2symb[i] for i in out]
-                if '<eos>' in out_seq:
-                    print(out_seq[:out_seq.index('<eos>')+1])
-                else:
-                    print(out_seq)
+
                 
 
     if test:
-            # Évaluation
-            # À compléter
-
-            # Charger les données de tests
-            # À compléter
-
-            # Affichage de l'attention
-            # À compléter (si nécessaire)
-
-            # Affichage des résultats de test
-            # À compléter
+        # Évaluation
+        model = torch.load('model.pt')
+        model.eval()
+        dataset_test.symb2int = model.symb2int
+        dataset_test.int2symb = model.int2symb
+        criterion = nn.CrossEntropyLoss(ignore_index=2)
+        
+        seq_list_ = []   
+        target_list_ = []
+        output_list_ = []
+        att_list_ = []
+        
+        target_list_int = []
+        output_list_int = []
+        
+        dist_test = 0
+        running_loss_test = 0
+        
+        for data in dataload_test:
+            seq, target = data
+            seq = torch.swapaxes(seq, 1, 2)
+            seq.unsqueeze(0)
+            seq = seq.to(device).float()
+            target = target.to(device).long()
+            output, hidden, att = model(seq)
+            loss = criterion(output.view((-1, model.dict_size)), target.view(-1))
+            running_loss_test += loss.item()
             
-            # Affichage de la matrice de confusion
-            # À compléter
+            output_list = torch.argmax(output, dim=-1).detach().cpu().tolist()
+            target_list = target.cpu().tolist()
+            M = len(output_list)
+            
+            for i in range(batch_size):
+                a = target_list[i]
+                b = output_list[i]
+                Ma = a.index(1)
+                Mb = b.index(1) if 1 in b else len(b)
+                dist_test += edit_distance(a[:Ma], b[:Mb])/batch_size
+            
+            seq_list_.append(seq)
+            target_list_.append(target)
+            output_list_.append(output)
+            att_list_.append(att)
 
-            pass
+           
+        # Affichage des résultats de test
+        print('\nTest - Average loss: {:.4f} Average Edit Distance: {:.4f}'.format(running_loss_test/len(dataload_test), dist_test/len(dataload_test)))
+        print('')   
+                    
+        if gen_test_images:
+            
+            for sublist in target_list_:
+                for item in sublist:
+                    for letter in item.detach().cpu().tolist():
+                        target_list_int.append(letter)
+                        
+            for sublist in output_list_:
+                for item in sublist:
+                    for letter in torch.argmax(item, dim=1).detach().cpu().tolist():
+                        output_list_int.append(letter)
+                      
+            matrix = confusion_matrix(target_list_int, output_list_int)
+            plt.imshow(matrix,  cmap='binary')
+            plt.xticks(np.arange(len(dataset.symb2int)-3), list(dataset.symb2int.keys())[3:])
+            plt.yticks(np.arange(len(dataset.symb2int)-3), list(dataset.symb2int.keys())[3:])
+            plt.xlabel('Predicted')
+            plt.ylabel('Actual')
+            plt.show()
+            
+            for i in range(10):
+                random_batch = np.random.randint(0, len(output_list_))
+                random_idx = np.random.randint(0, len(output_list_[random_batch]))
+                
+                seq = seq_list_[random_batch][random_idx]
+                output = output_list_[random_batch][random_idx]
+                target = target_list_[random_batch][random_idx]
+                att = att_list_[random_batch][random_idx]
+                
+                output = torch.argmax(output, dim=1).detach().cpu().tolist()
+                output = [model.int2symb[i] for i in output]
+                
+                target = target.detach().cpu().tolist()
+                target = [model.int2symb[i] for i in target]
+                
+                seq = seq.detach().cpu().tolist()
+                
+                att = att.detach().cpu().numpy()
+                
+                x_coord = np.zeros(1)
+                y_coord = np.zeros(1)
+                
+                for i in range(len(seq)):             
+                    x_coord = np.append(x_coord, x_coord[-1] + seq[i][0])
+                    y_coord = np.append(y_coord, y_coord[-1] + seq[i][1])
+                    
+                for idx in range(len(att)):
+                    x_coord_attn = x_coord[np.argpartition(att[idx], -15)[-15:]]
+                    y_coord_attn = y_coord[np.argpartition(att[idx], -15)[-15:]]
+                    
+                    plt.subplot(3,2, idx+1)
+                    plt.plot(x_coord, y_coord, 'o', color='dimgray')
+                    plt.plot(x_coord_attn, y_coord_attn, 'o', color='red')
+                    plt.xlabel('x')
+                    plt.ylabel('y')
+                    plt.title('Lettre: ' + str(idx) + ' Pred: ' + output[idx] + ' Target: ' + target[idx])
+                
+                plt.subplots_adjust(hspace=0.5, wspace=0.5)
+                plt.show()                
