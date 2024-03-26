@@ -74,20 +74,21 @@ class trajectory2seq(nn.Module):
 
         return vec_out, hidden, None
 
-
     def decoderATT(self, encoder_outs, hidden):
         # Initialisation des variables
         max_len = self.max_len['target'] 
         batch_size = hidden.shape[1] # Taille de la batch
         vec_in = torch.zeros((batch_size, 1)).to(self.device).long() # Vecteur d'entrée pour décodage 
         vec_out = torch.zeros((batch_size, max_len, self.dict_size)).to(self.device) # Vecteur de sortie du décodage et prochaine entrée
-
+        weightOut = torch.zeros((batch_size, max_len, encoder_outs.shape[1])).to(self.device) # Vecteur de sortie du décodage et prochaine entrée
         # Boucle pour tous les symboles de sortie
+
         for i in range(max_len):
             out, hidden = self.decoder_layer(self.target_embedding(vec_in), hidden) # ici on fait l'embedding, car on a la lettre précédente en entrée
             attOut = self.fcHiddenQuerry(out)
             simmilarity = torch.matmul(encoder_outs, attOut.transpose(1,2))
             attNorm = self.softmax(simmilarity) 
+            weightOut[:, i, :] = attNorm.transpose(1,2).squeeze(1)
             attention = torch.bmm(attNorm.transpose(1,2), encoder_outs) 
             out = torch.cat((out, attention), dim=2)
             out = self.fcAttCombine(out)
@@ -95,7 +96,7 @@ class trajectory2seq(nn.Module):
             vec_out[:, i, :] = output.squeeze(1)
             vec_in = output.argmax(dim=-1) # on sort l'index de la valeur la plus haute
 
-        return vec_out, hidden, None
+        return vec_out, hidden, weightOut
 
 class trajectory2seqBI(nn.Module):
     def __init__(self, hidden_dim, n_layers, int2symb, symb2int, dict_size, device, maxlen, withAttention = False):

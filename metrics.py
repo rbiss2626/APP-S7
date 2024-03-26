@@ -28,7 +28,11 @@ def edit_distance(x,y):
     return dp[m][n]
 
 def confusion_matrix(true, pred, ignore=[]):
-    matrix = np.zeros((26,26))
+    matrix = np.zeros((29-len(ignore),29-len(ignore)))
+    if len(true) != len(pred):
+        raise ValueError("Les deux listes doivent être de la même longueur")
     for i in range(len(true)):
-        matrix[ord(true[i])-ord('a')][ord(pred[i])-ord('a')] += 1
+        if true[i] not in ignore and pred[i] not in ignore:
+            matrix[true[i]-len(ignore)][pred[i]-len(ignore)] += 1
+            
     return matrix
