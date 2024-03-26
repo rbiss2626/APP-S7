@@ -253,16 +253,6 @@ if __name__ == '__main__':
         print('\nTest - Average loss: {:.4f} Average Edit Distance: {:.4f}'.format(running_loss_test/len(dataload_test), dist_test/len(dataload_test)))
         print('')   
         
-        # out = torch.argmax(output, dim=2).detach().cpu()[0,:].tolist()
-        # out_seq = [model.int2symb[i] for i in out]
-        # target = [model.int2symb[i] for i in target.detach().cpu()[0,:].tolist()]
-        # print("target: ")
-        # print(target[:target.index('<eos>')+1])
-        # print("inference: ")
-        # if '<eos>' in out_seq:
-        #     print(out_seq[:out_seq.index('<eos>')+1])
-        # else:
-        #     print(out_seq)
 
         #add symbols to the lists
         for i in range(len(output_list)):

@@ -23,8 +23,6 @@ class trajectory2seq(nn.Module):
         # Definition des couches
         # Couches pour rnn
         self.target_embedding = nn.Embedding(self.dict_size, self.hidden_dim)
-        # self.seq_embedding = nn.Embedding(self.dict_size['seq'], self.hidden_dim)
-
 
         self.encoder_layer = nn.GRU(2, self.hidden_dim, n_layers, batch_first=True, bidirectional=bidirectionnal)
         self.decoder_layer = nn.GRU(self.hidden_dim, self.hidden_dim, n_layers, batch_first=True, bidirectional=bidirectionnal)

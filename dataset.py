@@ -53,7 +53,6 @@ class HandwrittenWords(Dataset):
 
         #  -- sequence --
         # ici, on trouve la longueur max et on pad avec le dernier chiffre qu'on répete.
-        # self.maxLen['seq'] = 500
         self.maxLen['seq'] = 0
         for i in range(len(self.data)):
             if len(self.data[i][1][0]) > self.maxLen['seq']:
@@ -62,8 +61,8 @@ class HandwrittenWords(Dataset):
         for i in range(len(self.data)):
             self.data[i][1] = torch.diff(torch.tensor(self.data[i][1]), dim=1).cpu().detach().numpy()
 
-            data_x = 0#self.data[i][1][0][-1]
-            data_y = 0#self.data[i][1][1][-1]
+            data_x = 0
+            data_y = 0
 
             pad_seq_x = np.array([data_x] * ((self.maxLen['seq'] - len(self.data[i][1][0])) - 1))
             pad_seq_y = np.array([data_y] * ((self.maxLen['seq'] - len(self.data[i][1][1])) - 1))
