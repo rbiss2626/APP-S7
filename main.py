@@ -26,7 +26,8 @@ if __name__ == '__main__':
 
     # À compléter
     batch_size = 100            # Taille des lots
-    n_epochs = 200              # Nombre d'iteration sur l'ensemble de donnees
+    batch_size_test = 1            # Taille des lots
+    n_epochs = 50              # Nombre d'iteration sur l'ensemble de donnees
     lr = 0.01                   # Taux d'apprentissage pour l'optimizateur
 
     n_hidden = 18               # Nombre de neurones caches par couches
@@ -50,14 +51,16 @@ if __name__ == '__main__':
     dataset = HandwrittenWords('data_trainval.p')
 
     # Séparation de l'ensemble de données (entraînement et validation)
-    dataset_train, dataset_val, dataset_test = torch.utils.data.random_split(dataset,[int(len(dataset)*0.8),
-                                                                 int(len(dataset)*0.1), int(len(dataset)*0.1)])
+    dataset_train, dataset_val = torch.utils.data.random_split(dataset,[int(len(dataset)*0.8),
+                                                                 int(len(dataset)*0.2)])
+
+    dataset_test = HandwrittenWords('data_test.p')
     
 
     # Instanciation des dataloaders
     dataload_train = DataLoader(dataset_train,batch_size=batch_size,shuffle=True,num_workers=0)
     dataload_val = DataLoader(dataset_val,batch_size=batch_size,shuffle=True,num_workers=0)
-    dataload_test = DataLoader(dataset_test,batch_size=batch_size,shuffle=False,num_workers=0)
+    dataload_test = DataLoader(dataset_test,batch_size=batch_size_test,shuffle=False,num_workers=0)
 
     print('Number of epochs : ', n_epochs)
     print('Training data : ', len(dataset_train))
@@ -204,6 +207,7 @@ if __name__ == '__main__':
  
 
     if test:
+        batch_size = batch_size_test
         # Évaluation
         model = torch.load('model.pt')
         model.device = device
@@ -312,6 +316,6 @@ if __name__ == '__main__':
                 
                 plt.subplots_adjust(hspace=0.5, wspace=0.5)
                 plt.savefig('test_images/'+ ('withAtt_' if withAtt else 'withoutAtt_')+ ('bidirectionnal/' if bidirectionnal else 'unidirectionnal/') + 'image_' + str(i) + '.png', dpi=300)
-                # plt.show()
+                plt.show()
                 
                 pass
