@@ -18,7 +18,7 @@ if __name__ == '__main__':
     force_cpu = False           # Forcer a utiliser le cpu?
     trainning = True           # Entrainement?
     attention = True            # Attention?
-    bidirectionnal = True      # Bidirectionnel?
+    bidirectionnal = False      # Bidirectionnel?
     test = True                # Test?
     learning_curves = True     # Affichage des courbes d'entrainement?
     gen_test_images = True     # Génération images test?
@@ -28,7 +28,7 @@ if __name__ == '__main__':
     # À compléter
     n_epochs = 50
     lr = 0.008
-    batch_size = 100
+    batch_size = 50
     n_hidden = 18
     n_layers = 2
 
@@ -47,12 +47,15 @@ if __name__ == '__main__':
     _dir_path = os.path.join(_dir_path, 'data_trainval.p')
     dataset = HandwrittenWords(_dir_path)
 
+    _dir_path = os.path.dirname(__file__)
+    _dir_path = os.path.join(_dir_path, 'data_test.p')
+    dataset_test = HandwrittenWords(_dir_path)
+
     
     # Séparation de l'ensemble de données (entraînement et validation)
-    dataset_train, dataset_val, dataset_test = torch.utils.data.random_split(dataset,
+    dataset_train, dataset_val = torch.utils.data.random_split(dataset,
                                                                 [int(len(dataset) * 0.80),
-                                                                 int(len(dataset) * 0.1),
-                                                                 int(len(dataset) * 0.1)])
+                                                                 int(len(dataset) * 0.2)])
    
     # Instanciation des dataloaders
     dataload_train = DataLoader(dataset_train, batch_size=batch_size, shuffle=True, num_workers=n_workers)
@@ -269,21 +272,23 @@ if __name__ == '__main__':
                 seq = seq.detach().cpu().tolist()
                 
                 att = att.detach().cpu().numpy()
-                
+                        
                 x_coord = np.zeros(1)
                 y_coord = np.zeros(1)
                 
-                for i in range(len(seq)):             
+                for i in range(len(seq) - 1):             
                     x_coord = np.append(x_coord, x_coord[-1] + seq[i][0])
                     y_coord = np.append(y_coord, y_coord[-1] + seq[i][1])
                     
                 for idx in range(len(att)):
-                    x_coord_attn = x_coord[np.argpartition(att[idx], -15)[-15:]]
-                    y_coord_attn = y_coord[np.argpartition(att[idx], -15)[-15:]]
-                    
+                    # x_coord_attn = x_coord[np.argpartition(att[idx], -15)[-15:]]
+                    # y_coord_attn = y_coord[np.argpartition(att[idx], -15)[-15:]]
+
+                                        
                     plt.subplot(3,2, idx+1)
-                    plt.plot(x_coord, y_coord, 'o', color='dimgray')
-                    plt.plot(x_coord_attn, y_coord_attn, 'o', color='red')
+                    plt.scatter(x_coord, y_coord, c=np.array(att[idx]), cmap='gray_r',norm='log')
+                    # plt.plot(x_coord, y_coord, 'o', color='dimgray')
+                    # plt.plot(x_coord_attn, y_coord_attn, 'o', color='red')
                     plt.xlabel('x')
                     plt.ylabel('y')
                     plt.title('Lettre: ' + str(idx) + ' Pred: ' + output[idx] + ' Target: ' + target[idx])
