@@ -18,7 +18,7 @@ if __name__ == '__main__':
     force_cpu = False           # Forcer a utiliser le cpu?
     trainning = True           # Entrainement?
     attention = True            # Attention?
-    bidirectionnal = False      # Bidirectionnel?
+    bidirectionnal = True      # Bidirectionnel?
     test = True                # Test?
     learning_curves = True     # Affichage des courbes d'entrainement?
     gen_test_images = True     # Génération images test?
@@ -29,7 +29,7 @@ if __name__ == '__main__':
     n_epochs = 50
     lr = 0.008
     batch_size = 50
-    n_hidden = 18
+    n_hidden = 14
     n_layers = 2
 
     # ---------------- Fin Paramètres et hyperparamètres ----------------#
@@ -69,9 +69,15 @@ if __name__ == '__main__':
     print('\n')
 
     # Instanciation du model
-    model = trajectory2seq(hidden_dim=n_hidden, n_layers=n_layers, int2symb=dataset.int2symb, symb2int=dataset.symb2int,
+    if (bidirectionnal):
+        model = trajectory2seq_bi(hidden_dim=n_hidden, n_layers=n_layers, int2symb=dataset.int2symb, symb2int=dataset.symb2int,
                            dict_size=dataset.dict_size, device=device, maxlen=dataset.max_len,
-                           with_attention=attention, with_bidirectionnal=bidirectionnal)
+                           with_attention=attention)
+    else:
+        model = trajectory2seq(hidden_dim=n_hidden, n_layers=n_layers, int2symb=dataset.int2symb, symb2int=dataset.symb2int,
+                           dict_size=dataset.dict_size, device=device, maxlen=dataset.max_len,
+                           with_attention=attention)
+    
 
     print('Model : \n', model, '\n')
     print('Nombre de poids: ', sum([i.numel() for i in model.parameters()]))
@@ -281,14 +287,13 @@ if __name__ == '__main__':
                     y_coord = np.append(y_coord, y_coord[-1] + seq[i][1])
                     
                 for idx in range(len(att)):
-                    # x_coord_attn = x_coord[np.argpartition(att[idx], -15)[-15:]]
-                    # y_coord_attn = y_coord[np.argpartition(att[idx], -15)[-15:]]
-
-                                        
+                    x_coord_attn = x_coord[np.argpartition(att[idx], -25)[-25:]]
+                    y_coord_attn = y_coord[np.argpartition(att[idx], -25)[-25:]]
+          
                     plt.subplot(3,2, idx+1)
-                    plt.scatter(x_coord, y_coord, c=np.array(att[idx]), cmap='gray_r',norm='log')
-                    # plt.plot(x_coord, y_coord, 'o', color='dimgray')
-                    # plt.plot(x_coord_attn, y_coord_attn, 'o', color='red')
+                    # plt.scatter(x_coord, y_coord, c=np.array(att[idx]), cmap='gray_r',norm='log')
+                    plt.plot(x_coord, y_coord, 'o', color='dimgray')
+                    plt.plot(x_coord_attn, y_coord_attn, 'o', color='red')
                     plt.xlabel('x')
                     plt.ylabel('y')
                     plt.title('Lettre: ' + str(idx) + ' Pred: ' + output[idx] + ' Target: ' + target[idx])

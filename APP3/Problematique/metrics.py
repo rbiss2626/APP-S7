@@ -44,4 +44,10 @@ def confusion_matrix(true, pred, ignore=[]):
     for i in range(len(true)):
         if true[i] not in ignore:
             confusion_matrix[true[i]-3][pred[i]-3] += 1
-    return confusion_matrix
+    #Alexandre Ouellet
+    confusion_matrix_normalized = np.zeros((num_classes, num_classes))
+    for i in range(num_classes):
+        if np.sum(confusion_matrix[i]) > 0:
+            confusion_matrix_normalized[i] = confusion_matrix[i] / np.sum(confusion_matrix[i])
+    
+    return confusion_matrix_normalized
