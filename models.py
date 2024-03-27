@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class trajectory2seq(nn.Module):
-    def __init__(self, hidden_dim, n_layers, int2symb, symb2int, dict_size, device, maxlen, withAttention = False, bidirectionnal=False):
+    def __init__(self, hidden_dim, n_layers, int2symb, symb2int, dict_size, device, maxlen, withAttention = False):
         super(trajectory2seq, self).__init__()
         # Definition des parametres
         self.hidden_dim = hidden_dim
@@ -24,18 +24,14 @@ class trajectory2seq(nn.Module):
         # Couches pour rnn
         self.target_embedding = nn.Embedding(self.dict_size, self.hidden_dim)
 
-        self.encoder_layer = nn.GRU(2, self.hidden_dim, n_layers, batch_first=True, bidirectional=bidirectionnal)
-        self.decoder_layer = nn.GRU(self.hidden_dim, self.hidden_dim, n_layers, batch_first=True, bidirectional=bidirectionnal)
+        self.encoder_layer = nn.GRU(2, self.hidden_dim, n_layers, batch_first=True, bidirectional=False)
+        self.decoder_layer = nn.GRU(self.hidden_dim, self.hidden_dim, n_layers, batch_first=True, bidirectional=False)
 
         # Couches pour attention
         self.softmax = nn.Softmax()
 
-        if(bidirectionnal):
-            self.fcAttCombine = nn.Linear(self.hidden_dim*2*2, self.hidden_dim) 
-            self.fcHiddenQuerry = nn.Linear(self.hidden_dim*2, self.hidden_dim*2) 
-        else:
-            self.fcAttCombine = nn.Linear(self.hidden_dim*2, self.hidden_dim) 
-            self.fcHiddenQuerry = nn.Linear(self.hidden_dim, self.hidden_dim) 
+        self.fcAttCombine = nn.Linear(self.hidden_dim*2, self.hidden_dim) 
+        self.fcHiddenQuerry = nn.Linear(self.hidden_dim, self.hidden_dim) 
 
         # Couche dense pour la sortie
         self.fc = nn.Linear(self.hidden_dim, self.dict_size) #on sort un one-hot pour les lettres
@@ -96,9 +92,11 @@ class trajectory2seq(nn.Module):
 
         return vec_out, hidden, weightOut
 
-class trajectory2seqBI(nn.Module):
+
+
+class trajectory2seqbi(nn.Module):
     def __init__(self, hidden_dim, n_layers, int2symb, symb2int, dict_size, device, maxlen, withAttention = False):
-        super(trajectory2seqBI, self).__init__()
+        super(trajectory2seqbi, self).__init__()
         # Definition des parametres
         self.hidden_dim = hidden_dim
         self.n_layers = n_layers
@@ -112,15 +110,16 @@ class trajectory2seqBI(nn.Module):
         # Definition des couches
         # Couches pour rnn
         self.target_embedding = nn.Embedding(self.dict_size, self.hidden_dim)
-        # self.seq_embedding = nn.Embedding(self.dict_size['seq'], self.hidden_dim)
-        self.encoder_layer = nn.GRU(2, self.hidden_dim, n_layers, batch_first=True, bidirectional=True)
-        self.decoder_layer = nn.GRU(self.hidden_dim, self.hidden_dim, n_layers, batch_first=True, bidirectional=True)
 
+        self.encoder_layer = nn.GRU(2, self.hidden_dim, n_layers, batch_first=True, bidirectional=True)
+        self.decoder_layer = nn.GRU(self.hidden_dim, self.hidden_dim, n_layers, batch_first=True, bidirectional=False)
 
         # Couches pour attention
         self.softmax = nn.Softmax()
-        self.fcAttCombine = nn.Linear(self.hidden_dim*2*2, self.hidden_dim) 
-        self.fcHiddenQuerry = nn.Linear(self.hidden_dim*2, self.hidden_dim*2) 
+
+        self.fcAttCombine = nn.Linear(self.hidden_dim*3, self.hidden_dim) 
+        self.fcQuerryToValues = nn.Linear(self.hidden_dim, self.hidden_dim*2) 
+        self.fcHidden2Hidden = nn.Linear(self.hidden_dim*2, self.hidden_dim)
 
         # Couche dense pour la sortie
         self.fc = nn.Linear(self.hidden_dim, self.dict_size) #on sort un one-hot pour les lettres
@@ -134,10 +133,13 @@ class trajectory2seqBI(nn.Module):
             out, h = self.encoder(x)
             out, hidden, attn = self.decoderATT(out,h)
             return out, hidden, attn
-    
 
     def encoder(self, x):
         out, hidden = self.encoder_layer(x) # pas d'embeding, on a déja des nombres
+        hidden = hidden.reshape(-1, self.hidden_dim*2)
+        hidden = self.fcHidden2Hidden(hidden)
+        hidden = hidden.reshape(self.n_layers, x.shape[0], self.hidden_dim)   
+
         return out, hidden
 
     
@@ -157,20 +159,21 @@ class trajectory2seqBI(nn.Module):
 
         return vec_out, hidden, None
 
-
     def decoderATT(self, encoder_outs, hidden):
         # Initialisation des variables
         max_len = self.max_len['target'] 
         batch_size = hidden.shape[1] # Taille de la batch
         vec_in = torch.zeros((batch_size, 1)).to(self.device).long() # Vecteur d'entrée pour décodage 
         vec_out = torch.zeros((batch_size, max_len, self.dict_size)).to(self.device) # Vecteur de sortie du décodage et prochaine entrée
-
+        weightOut = torch.zeros((batch_size, max_len, encoder_outs.shape[1])).to(self.device) # Vecteur de sortie du décodage et prochaine entrée
         # Boucle pour tous les symboles de sortie
+
         for i in range(max_len):
             out, hidden = self.decoder_layer(self.target_embedding(vec_in), hidden) # ici on fait l'embedding, car on a la lettre précédente en entrée
-            attOut = self.fcHiddenQuerry(out)
+            attOut = self.fcQuerryToValues(out)
             simmilarity = torch.matmul(encoder_outs, attOut.transpose(1,2))
             attNorm = self.softmax(simmilarity) 
+            weightOut[:, i, :] = attNorm.transpose(1,2).squeeze(1)
             attention = torch.bmm(attNorm.transpose(1,2), encoder_outs) 
             out = torch.cat((out, attention), dim=2)
             out = self.fcAttCombine(out)
@@ -178,4 +181,4 @@ class trajectory2seqBI(nn.Module):
             vec_out[:, i, :] = output.squeeze(1)
             vec_in = output.argmax(dim=-1) # on sort l'index de la valeur la plus haute
 
-        return vec_out, hidden, None
+        return vec_out, hidden, weightOut

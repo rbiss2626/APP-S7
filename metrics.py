@@ -34,5 +34,10 @@ def confusion_matrix(true, pred, ignore=[]):
     for i in range(len(true)):
         if true[i] not in ignore and pred[i] not in ignore:
             matrix[true[i]-len(ignore)][pred[i]-len(ignore)] += 1
+
+    confusion_matrix_normalized = np.zeros((29-len(ignore),29-len(ignore)))
+    for i in range(29-len(ignore)):
+        if np.sum(matrix[i]) > 0:
+            confusion_matrix_normalized[i] = matrix[i] / np.sum(matrix[i])
             
-    return matrix
+    return confusion_matrix_normalized

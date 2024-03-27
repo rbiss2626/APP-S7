@@ -15,22 +15,22 @@ if __name__ == '__main__':
 
     # ---------------- Paramètres et hyperparamètres ----------------#
     force_cpu = False           # Forcer a utiliser le cpu?
-    trainning = True           # Entrainement?
+    trainning = False            # Entrainement?
     test = True                # Test?
     learning_curves = True     # Affichage des courbes d'entrainement?
     gen_test_images = True     # Génération images test?
     seed = 1                # Pour répétabilité
     n_workers = 0           # Nombre de threads pour chargement des données (mettre à 0 sur Windows)
     withAtt = True          # Utiliser l'attention?
-    bidirectionnal = False  # Utiliser un RNN bidirectionnel?
+    bidirectionnal = True  # Utiliser un RNN bidirectionnel?
 
     # À compléter
-    batch_size = 100            # Taille des lots
-    batch_size_test = 1            # Taille des lots
-    n_epochs = 50              # Nombre d'iteration sur l'ensemble de donnees
-    lr = 0.01                   # Taux d'apprentissage pour l'optimizateur
+    batch_size = 50             #Taille des lots
+    batch_size_test = 50            # Taille des lots
+    n_epochs = 100              # Nombre d'iteration sur l'ensemble de donnees
+    lr = 0.008                   # Taux d'apprentissage pour l'optimizateur
 
-    n_hidden = 18               # Nombre de neurones caches par couches
+    n_hidden = 14               # Nombre de neurones caches par couches
     n_layers = 2               # Nombre de de couches
 
     os.makedirs('test_images', exist_ok=True)
@@ -45,7 +45,6 @@ if __name__ == '__main__':
     print(torch.cuda.is_available())
     # Choix du device
     device = torch.device("cuda" if torch.cuda.is_available() and not force_cpu else "cpu")
-    # device = torch.device("cuda")
 
     # Instanciation de l'ensemble de données
     dataset = HandwrittenWords('data_trainval.p')
@@ -68,7 +67,11 @@ if __name__ == '__main__':
     print('\n')
 
     # Instanciation du model
-    model = trajectory2seq(n_hidden,n_layers,dataset.int2symb,dataset.symb2int,dataset.dictSize,device,dataset.maxLen, withAttention=withAtt, bidirectionnal=bidirectionnal)
+    if bidirectionnal:
+        model = trajectory2seqbi(n_hidden,n_layers,dataset.int2symb,dataset.symb2int,dataset.dictSize,device,dataset.maxLen, withAttention=withAtt)
+    else:
+        model = trajectory2seq(n_hidden,n_layers,dataset.int2symb,dataset.symb2int,dataset.dictSize,device,dataset.maxLen, withAttention=withAtt)
+
     model = model.to(device)
     print('Nombre de poids: ', sum([i.numel() for i in model.parameters()]))
 
@@ -203,9 +206,6 @@ if __name__ == '__main__':
             plt.show()
             plt.close('all')
 
-
- 
-
     if test:
         batch_size = batch_size_test
         # Évaluation
@@ -264,7 +264,7 @@ if __name__ == '__main__':
             target_list_int += [i for i in target_list[i]]
         ingore = [0,1,2]   
         matrix = confusion_matrix(target_list_int, output_list_int, ignore=ingore)
-        plt.imshow(matrix)#,  cmap='binary')
+        plt.imshow(matrix)
         plt.xticks(np.arange(len(dataset.symb2int)-len(ingore)), [dataset.int2symb[i] for i in range(len(dataset.symb2int.keys())) if i not in ingore])
         plt.yticks(np.arange(len(dataset.symb2int)-len(ingore)), [dataset.int2symb[i] for i in range(len(dataset.symb2int.keys())) if i not in ingore])
         plt.xlabel('Predicted')
@@ -283,10 +283,8 @@ if __name__ == '__main__':
                 target = target_list_global[random_batch][random_idx]
                 att = att_list[random_batch][random_idx]
                 
-                # output = torch.argmax(torch.tensor(output), dim=1).detach().cpu().tolist()
                 output = [model.int2symb[i] for i in output]
                 
-                # target = target.detach().cpu().tolist()
                 target = [model.int2symb[i] for i in target]
                 
                 seq = seq.detach().cpu().tolist()
@@ -297,6 +295,7 @@ if __name__ == '__main__':
                 y_dist = []
                 x_coord = np.zeros(1)
                 y_coord = np.zeros(1)
+                print("target: {}, output: {}".format(target, output))
                 
                 for idy in range(len(seq)-1):
                     x_dist.append(seq[idy][0])
@@ -305,11 +304,8 @@ if __name__ == '__main__':
                     y_coord = np.append(y_coord, y_coord[-1] + y_dist[idy])
                     
                 for idx in range(len(att)):
-                    # x_coord_attn = x_coord[np.argpartition(att[idx], -100)[-100:]]
-                    # y_coord_attn = y_coord[np.argpartition(att[idx], -100)[-100:]]
                     plt.subplot(3,2, idx+1)
                     plt.scatter(x_coord, y_coord, c=np.array(att[idx]), cmap='gray_r',norm='log', s=10)
-                    # plt.plot(x_coord_attn, y_coord_attn, 'o', color='red')
                     plt.xlabel('x')
                     plt.ylabel('y')
                     plt.title('Lettre ' + str(idx) + ' Pred: ' + output[idx] + ' Target: ' + target[idx])
